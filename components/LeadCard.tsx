@@ -12,9 +12,9 @@ export function Pill({ stage }: { stage: string }) {
   );
 }
 
-export function Avatar({ name, sm }: { name: string; sm?: boolean }) {
+export function Avatar({ name, sm, reps }: { name: string; sm?: boolean; reps?: string[] }) {
   return (
-    <span className={"avatar" + (sm ? " sm" : "")} style={{ background: name ? colorFor(name) : "#c9d0dd" }} title={name}>
+    <span className={"avatar" + (sm ? " sm" : "")} style={{ background: colorFor(name, reps) }} title={name}>
       {name ? initials(name) : "?"}
     </span>
   );
@@ -22,7 +22,7 @@ export function Avatar({ name, sm }: { name: string; sm?: boolean }) {
 
 export const money = (n: number) => (n ? "$" + Math.round(n).toLocaleString("en-CA") : "");
 
-export default function OppCard({ lead }: { lead: Lead }) {
+export default function OppCard({ lead, reps }: { lead: Lead; reps?: string[] }) {
   const over = lead.call_at && lead.stage === "booked" && lead.call_at.getTime() < Date.now() - 15 * 60000;
   return (
     <Link href={`/lead/${lead.id}`} className="opp">
@@ -43,7 +43,7 @@ export default function OppCard({ lead }: { lead: Lead }) {
         <span className="v">{money(lead.value)}</span>
         <span className="row" style={{ gap: 6 }}>
           <span>{lead.rep}</span>
-          <Avatar name={lead.rep} sm />
+          <Avatar name={lead.rep} sm reps={reps} />
         </span>
       </div>
     </Link>

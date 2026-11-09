@@ -13,7 +13,7 @@ export default async function Contacts({ searchParams }: { searchParams: SP }) {
   const [leads, settings, counts] = await Promise.all([getLeads(searchParams), getSettings(), getStageCounts()]);
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   return (
-    <Shell active="contacts" title="Contacts" actions={<Link href="/new" className="btn sm">+ Add</Link>}>
+    <Shell active="contacts" title="Contacts" reps={settings.reps} actions={<Link href="/new" className="btn sm">+ Add</Link>}>
       <form className="toolbar" method="get">
         <div className="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>

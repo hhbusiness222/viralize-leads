@@ -11,7 +11,7 @@ const I = {
 
 export type Active = "opp" | "contacts" | "cal" | "add" | "settings" | "none";
 
-export default function Shell({ children, active, title, actions }: { children: React.ReactNode; active: Active; title: string; actions?: React.ReactNode }) {
+export default function Shell({ children, active, title, actions, reps }: { children: React.ReactNode; active: Active; title: string; actions?: React.ReactNode; reps?: string[] }) {
   const rep = currentRep();
   const nav = (
     <>
@@ -35,7 +35,7 @@ export default function Shell({ children, active, title, actions }: { children: 
           <h1>{title}</h1>
           <div className="grow" />
           {actions}
-          <Link href="/settings" className="avatar" title={rep || "Pick your name"} style={{ background: rep ? colorFor(rep) : "#c9d0dd" }}>
+          <Link href="/settings" className="avatar" title={rep || "Pick your name"} style={{ background: colorFor(rep, reps) }}>
             {rep ? initials(rep) : "?"}
           </Link>
         </div>
@@ -56,9 +56,15 @@ export function initials(s: string) {
   const p = s.trim().split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
 }
-export function colorFor(s: string) {
-  const palette = ["#623cd8", "#155eef", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488"];
+export const PALETTE = ["#623cd8", "#155eef", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488", "#a16207", "#64748b"];
+/** Each rep gets a fixed color by their position in the team list; unknown names fall back to a hash. */
+export function colorFor(s: string, reps?: string[]) {
+  if (!s) return "#c9d0dd";
+  if (reps) {
+    const i = reps.indexOf(s);
+    if (i >= 0) return PALETTE[i % PALETTE.length];
+  }
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return palette[h % palette.length];
+  return PALETTE[h % PALETTE.length];
 }

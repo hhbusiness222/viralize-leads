@@ -1,6 +1,7 @@
 import { login } from "../actions";
 import { getSettings } from "../../lib/data";
 import { hasDb } from "../../lib/db";
+import { DEFAULT_REPS } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function Login({ searchParams }: { searchParams: { err?: st
     reps = (await getSettings()).reps;
   } catch (e: any) {
     dbErr = e?.message || "Could not reach the database.";
+    reps = DEFAULT_REPS;
   }
   return (
     <div className="login-wrap">

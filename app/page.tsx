@@ -31,6 +31,7 @@ export default async function Opportunities({ searchParams }: { searchParams: SP
     <Shell
       active="opp"
       title="Opportunities"
+      reps={settings.reps}
       actions={<Link href="/new" className="btn sm">+ Add</Link>}
     >
       {searchParams.deleted && <div className="note ok" style={{ marginBottom: 10 }}>Lead deleted.</div>}
@@ -74,7 +75,7 @@ export default async function Opportunities({ searchParams }: { searchParams: SP
                 {items.length === 0 ? (
                   <div className="small" style={{ textAlign: "center", padding: "18px 6px" }}>Empty</div>
                 ) : (
-                  items.map((l) => <OppCard key={l.id} lead={l} />)
+                  items.map((l) => <OppCard key={l.id} lead={l} reps={settings.reps} />)
                 )}
               </div>
             </div>

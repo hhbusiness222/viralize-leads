@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Shell from "../../components/Shell";
 import { Avatar, Pill } from "../../components/LeadCard";
+import { colorFor } from "../../components/Shell";
 import { getCallsBetween, getFollowUpsBetween, getFollowUpsDue, getOverdueCalls, getSettings } from "../../lib/data";
 import { dayKey, fmtDate, fmtDateTime, fmtTime, fromLocalInput, monthKey, todayKey } from "../../lib/time";
 import type { Lead } from "../../lib/types";
@@ -24,10 +25,10 @@ function q(sp: SP, patch: Partial<SP>) {
   return "/calendar?" + p.toString();
 }
 
-function Appt({ l, over }: { l: Lead; over?: boolean }) {
+function Appt({ l, over, reps }: { l: Lead; over?: boolean; reps: string[] }) {
   return (
-    <Link href={`/lead/${l.id}`} className={"appt" + (over ? " over" : "")}>
-      <div className="time">{over ? fmtDateTime(l.call_at) : fmtTime(l.call_at)}</div>
+    <Link href={`/lead/${l.id}`} className={"appt" + (over ? " over" : "")} style={{ borderLeft: `5px solid ${colorFor(l.call_rep, reps)}` }}>
+      <div className="time" style={over ? undefined : { color: colorFor(l.call_rep, reps) }}>{over ? fmtDateTime(l.call_at) : fmtTime(l.call_at)}</div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div className="who">{l.business || l.contact}</div>
         <div className="s">{[l.contact, l.trade, l.phone].filter(Boolean).join(" · ")}</div>
@@ -36,7 +37,7 @@ function Appt({ l, over }: { l: Lead; over?: boolean }) {
         <Pill stage={l.stage} />
         <div className="row" style={{ justifyContent: "flex-end", gap: 6, marginTop: 4 }}>
           <span className="small">{l.call_rep || "no rep"}</span>
-          <Avatar name={l.call_rep} sm />
+          <Avatar name={l.call_rep} sm reps={reps} />
         </div>
       </div>
     </Link>
@@ -75,7 +76,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
   const showFu = searchParams.view === "followups";
 
   return (
-    <Shell active="cal" title="Calendar" actions={<Link href="/new" className="btn sm">+ Book</Link>}>
+    <Shell active="cal" title="Calendar" reps={settings.reps} actions={<Link href="/new" className="btn sm">+ Book</Link>}>
       <div className="cal-tools">
         <div className="seg">
           <Link href={q(searchParams, { view: "" })} className={!showOverdue ? "on" : ""}>Month</Link>
@@ -99,7 +100,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
           <div className="ph">Follow-ups due today or overdue</div>
           <div className="pb" style={{ display: "grid", gap: 8 }}>
             {due.length === 0 ? <div className="small">Nothing due.</div> : due.map((l) => (
-              <Link href={`/lead/${l.id}`} className="appt over" key={l.id}>
+              <Link href={`/lead/${l.id}`} className="appt over" key={l.id} style={{ borderLeft: "5px solid #d946ef" }}>
                 <div className="time" style={{ minWidth: 110 }}>{fmtDate(l.follow_up_at)}</div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div className="who">{l.business || l.contact}</div>
@@ -114,7 +115,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
         <div className="panel">
           <div className="ph">Calls that happened with no outcome logged</div>
           <div className="pb" style={{ display: "grid", gap: 8 }}>
-            {overdue.length === 0 ? <div className="small">All caught up.</div> : overdue.map((l) => <Appt key={l.id} l={l} over />)}
+            {overdue.length === 0 ? <div className="small">All caught up.</div> : overdue.map((l) => <Appt key={l.id} l={l} over reps={settings.reps} />)}
           </div>
         </div>
       ) : (
@@ -126,17 +127,32 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                 <b>{monthLabel}</b>
                 <Link className="btn ghost sm" href={q(searchParams, { m: shiftMonth(m, 1), day: "" })}>›</Link>
               </div>
+              <div className="legend">
+                {settings.reps.map((r) => (
+                  <Link key={r} href={q(searchParams, { rep: rep === r ? "" : r })} className={"lg" + (rep === r ? " on" : "")}>
+                    <i style={{ background: colorFor(r, settings.reps) }} />{r}
+                  </Link>
+                ))}
+                <span className="lg"><i style={{ background: "#d946ef", borderRadius: "50%" }} />Follow-up</span>
+              </div>
               <div className="cal">
                 {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <div className="dow" key={i}>{d}</div>)}
                 {Array.from({ length: firstDow }).map((_, i) => <div className="blank" key={"b" + i} />)}
                 {Array.from({ length: n }).map((_, i) => {
                   const d = i + 1;
                   const key = `${m}-${String(d).padStart(2, "0")}`;
-                  const c = (byDay[key]?.length || 0) + (fuByDay[key]?.length || 0);
+                  const dayCalls = byDay[key] || [];
+                  const dayFu = fuByDay[key] || [];
+                  const blocks = [...dayCalls.map((l) => colorFor(l.call_rep, settings.reps)), ...dayFu.map(() => "#d946ef")];
                   return (
                     <Link key={key} href={q(searchParams, { day: key })} className={(key === today ? "today " : "") + (key === sel ? "sel" : "")}>
                       {d}
-                      {c > 0 && <span className="cnt">{c}</span>}
+                      {blocks.length > 0 && (
+                        <span className="blocks">
+                          {blocks.slice(0, 4).map((c, i) => <i key={i} style={{ background: c }} />)}
+                          {blocks.length > 4 && <em>+{blocks.length - 4}</em>}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -149,9 +165,9 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
               <div className="ph">{sel ? dayLabel : "Pick a day"} <span className="small">{sel ? `${selList.length} call${selList.length === 1 ? "" : "s"}` : ""}</span></div>
               <div className="pb" style={{ display: "grid", gap: 8 }}>
                 {sel && selList.length === 0 && selFu.length === 0 && <div className="small">Nothing booked.</div>}
-                {selList.map((l) => <Appt key={l.id} l={l} />)}
+                {selList.map((l) => <Appt key={l.id} l={l} reps={settings.reps} />)}
                 {selFu.map((l) => (
-                  <Link href={`/lead/${l.id}`} className="appt" key={"f" + l.id}>
+                  <Link href={`/lead/${l.id}`} className="appt" key={"f" + l.id} style={{ borderLeft: "5px solid #d946ef" }}>
                     <div className="time" style={{ color: "#d946ef", minWidth: 70 }}>Follow up</div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="who">{l.business || l.contact}</div>
@@ -166,8 +182,8 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
               <div className="ph">Next 14 days</div>
               <div className="pb" style={{ display: "grid", gap: 8 }}>
                 {upcoming.length === 0 ? <div className="small">No upcoming calls.</div> : upcoming.map((l) => (
-                  <Link href={`/lead/${l.id}`} className="appt" key={l.id}>
-                    <div className="time" style={{ minWidth: 120 }}>{fmtDateTime(l.call_at)}</div>
+                  <Link href={`/lead/${l.id}`} className="appt" key={l.id} style={{ borderLeft: `5px solid ${colorFor(l.call_rep, settings.reps)}` }}>
+                    <div className="time" style={{ minWidth: 120, color: colorFor(l.call_rep, settings.reps) }}>{fmtDateTime(l.call_at)}</div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="who">{l.business || l.contact}</div>
                       <div className="s">{l.call_rep || "no rep set"}</div>
