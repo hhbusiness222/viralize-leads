@@ -1,10 +1,18 @@
 import postgres from "postgres";
 
-const url =
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  "";
+function findUrl(): string {
+  const direct = process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
+  if (direct) return direct;
+  // Vercel marketplace integrations may add a custom prefix, e.g. STORAGE_DATABASE_URL
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v && /(^|_)(DATABASE_URL|POSTGRES_URL)$/.test(k) && !/UNPOOLED|NO_SSL|PRISMA/.test(k)) return v;
+  }
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v && /(^|_)(DATABASE_URL|POSTGRES_URL)/.test(k)) return v;
+  }
+  return "";
+}
+const url = findUrl();
 
 declare global {
   // eslint-disable-next-line no-var
