@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { STAGE_MAP, type Lead } from "../lib/types";
-import { fmtDateTime } from "../lib/time";
+import { fmtDate, fmtDateTime } from "../lib/time";
 import { colorFor, initials } from "./Shell";
 
 export function Pill({ stage }: { stage: string }) {
@@ -33,7 +33,12 @@ export default function OppCard({ lead }: { lead: Lead }) {
           {over ? "Needs outcome · " : "Call · "}{fmtDateTime(lead.call_at)}{lead.call_rep ? " · " + lead.call_rep : ""}
         </div>
       )}
-      {!lead.call_at && lead.next_step && <div className="call" style={{ color: "var(--text2)" }}>Next: {lead.next_step}</div>}
+      {lead.follow_up_at && !["won", "lost"].includes(lead.stage) && lead.stage !== "booked" && (
+        <div className={"call" + (lead.follow_up_at.getTime() < Date.now() + 12 * 3600000 ? " over" : "")} style={lead.follow_up_at.getTime() < Date.now() + 12 * 3600000 ? undefined : { color: "#d946ef" }}>
+          Follow up {fmtDate(lead.follow_up_at)}{lead.next_step ? " · " + lead.next_step : ""}
+        </div>
+      )}
+      {!lead.follow_up_at && !lead.call_at && lead.next_step && <div className="call" style={{ color: "var(--text2)" }}>Next: {lead.next_step}</div>}
       <div className="f" style={{ marginTop: 6 }}>
         <span className="v">{money(lead.value)}</span>
         <span className="row" style={{ gap: 6 }}>

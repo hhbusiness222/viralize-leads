@@ -79,3 +79,14 @@ export function monthKey(date: Date) {
   const p = zonedParts(date);
   return `${p.y}-${String(p.m).padStart(2, "0")}`;
 }
+
+/** Value for <input type="date"> from an instant, in TZ. */
+export function toDateInput(date: Date | null | undefined) {
+  if (!date) return "";
+  return dayKey(date);
+}
+/** "YYYY-MM-DD" as 9:00 local in TZ. */
+export function fromDateInput(v: string | null | undefined): Date | null {
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  return fromLocalInput(v + "T09:00");
+}

@@ -5,7 +5,7 @@ import { Avatar, Pill, money } from "../../../components/LeadCard";
 import { addNote, deleteLead, setStage, updateLead } from "../../actions";
 import { getActivity, getLead, getSettings } from "../../../lib/data";
 import { OUTCOMES, STAGES } from "../../../lib/types";
-import { fmtDateTime, toLocalInput } from "../../../lib/time";
+import { fmtDate, fmtDateTime, toDateInput, toLocalInput } from "../../../lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,9 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
     <Shell active="none" title={lead.business || "Lead"} actions={<Link href="/" className="btn ghost sm">← Pipeline</Link>}>
       {searchParams.saved && <div className="note ok" style={{ marginBottom: 12 }}>Saved.</div>}
       {over && <div className="note warn" style={{ marginBottom: 12 }}>This call already happened. Log the outcome below.</div>}
+      {lead.follow_up_at && !["won", "lost"].includes(lead.stage) && lead.follow_up_at.getTime() < Date.now() + 12 * 3600000 && (
+        <div className="note warn" style={{ marginBottom: 12 }}>Follow-up due {fmtDate(lead.follow_up_at)}. Text him, log it, set the next date or move the stage.</div>
+      )}
 
       <div className="detail">
         {/* LEFT: contact card */}
@@ -46,6 +49,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
               <div>Stage</div><div><Pill stage={lead.stage} /></div>
               <div>Value</div><div>{money(lead.value) || "—"}</div>
               <div>Call</div><div>{lead.call_at ? fmtDateTime(lead.call_at) + (lead.call_rep ? " · " + lead.call_rep : "") : "Not booked"}</div>
+              <div>Follow up</div><div>{lead.follow_up_at ? fmtDate(lead.follow_up_at) : "—"}</div>
               <div>Added</div><div>{fmtDateTime(lead.created_at)}{lead.created_by ? " by " + lead.created_by : ""}</div>
             </div>
           </div>
@@ -119,6 +123,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
                 </div>
               </div>
               <div className="grid2">
+                <div><label>Follow up on</label><input name="follow_up_at" type="date" defaultValue={toDateInput(lead.follow_up_at)} /></div>
                 <div>
                   <label>Outcome</label>
                   <select name="outcome" defaultValue={lead.outcome}>
@@ -126,8 +131,8 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
                     {OUTCOMES.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
-                <div><label>Next step</label><input name="next_step" defaultValue={lead.next_step} placeholder="Send plan Monday / follow up Thurs" /></div>
               </div>
+              <div><label>Next step</label><input name="next_step" defaultValue={lead.next_step} placeholder="Send plan Monday / he's calling us back" /></div>
               <div><label>Call notes (what they said, budget, objections, what we pitched)</label><textarea name="call_notes" defaultValue={lead.call_notes} /></div>
               <div><label>Lost reason (if lost)</label><input name="lost_reason" defaultValue={lead.lost_reason} /></div>
               <div className="sticky-save"><button className="btn wide" type="submit">Save changes</button></div>

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { sql, ensureSchema } from "../lib/db";
 import { AUTH_COOKIE, REP_COOKIE, currentRep, expectedToken } from "../lib/auth";
-import { fmtDateTime, fromLocalInput } from "../lib/time";
+import { fmtDate, fmtDateTime, fromDateInput, fromLocalInput } from "../lib/time";
 import { STAGE_MAP } from "../lib/types";
 
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -86,6 +86,12 @@ export async function updateLead(fd: FormData) {
     if (stage === "booked" && !["No show", "Rescheduled", "Cancelled"].includes(outcome)) stage = "calldone";
   }
   if (nextStep && nextStep !== cur.next_step) notes.push("Next: " + nextStep);
+  const followUp = fromDateInput(s(fd, "follow_up_at"));
+  const prevFu = cur.follow_up_at ? new Date(cur.follow_up_at).getTime() : null;
+  if (followUp && followUp.getTime() !== prevFu) {
+    notes.push("Follow up " + fmtDate(followUp));
+    if (stage === "calldone") stage = "followup";
+  }
 
   await sql`
     update leads set
@@ -93,7 +99,7 @@ export async function updateLead(fd: FormData) {
       trade = ${s(fd, "trade")}, source = ${s(fd, "source")}, rep = ${s(fd, "rep")}, how = ${sql.json(how)},
       text_notes = ${s(fd, "text_notes")}, call_at = ${callAt}, call_rep = ${callRep}, outcome = ${outcome},
       call_notes = ${s(fd, "call_notes")}, next_step = ${nextStep}, lost_reason = ${s(fd, "lost_reason")},
-      stage = ${stage}, value = ${num(fd, "value")}, updated_at = now()
+      stage = ${stage}, value = ${num(fd, "value")}, follow_up_at = ${followUp}, updated_at = now()
     where id = ${id}
   `;
   await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${notes.join(" · ") || "Edited details"}, ${me})`;

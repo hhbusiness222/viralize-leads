@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Shell from "../components/Shell";
 import OppCard, { money } from "../components/LeadCard";
-import { getLeads, getOverdueCalls, getSettings } from "../lib/data";
+import { getFollowUpsDue, getLeads, getOverdueCalls, getSettings } from "../lib/data";
 import { STAGES } from "../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +17,11 @@ function qs(sp: SP, patch: Partial<SP>) {
 }
 
 export default async function Opportunities({ searchParams }: { searchParams: SP }) {
-  const [leads, settings, overdue] = await Promise.all([
+  const [leads, settings, overdue, due] = await Promise.all([
     getLeads({ rep: searchParams.rep, q: searchParams.q, sort: "updated" }),
     getSettings(),
     getOverdueCalls(),
+    getFollowUpsDue(),
   ]);
   const byStage: Record<string, typeof leads> = {};
   for (const s of STAGES) byStage[s.key] = [];
@@ -40,6 +41,12 @@ export default async function Opportunities({ searchParams }: { searchParams: SP
         </div>
       )}
 
+      {due.length > 0 && (
+        <div className="note warn" style={{ marginBottom: 12, borderColor: "#e9b3f5", background: "#fbeafe", color: "#86198f" }}>
+          {due.length} follow-up{due.length > 1 ? "s" : ""} due: {due.slice(0, 3).map((l) => l.business).join(", ")}{due.length > 3 ? "..." : ""}.{" "}
+          <Link href="/calendar?view=followups" style={{ textDecoration: "underline" }}>See them</Link>
+        </div>
+      )}
       <form className="toolbar" method="get">
         <div className="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>

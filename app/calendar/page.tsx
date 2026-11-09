@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Shell from "../../components/Shell";
 import { Avatar, Pill } from "../../components/LeadCard";
-import { getCallsBetween, getOverdueCalls, getSettings } from "../../lib/data";
-import { dayKey, fmtDateTime, fmtTime, fromLocalInput, monthKey, todayKey } from "../../lib/time";
+import { getCallsBetween, getFollowUpsBetween, getFollowUpsDue, getOverdueCalls, getSettings } from "../../lib/data";
+import { dayKey, fmtDate, fmtDateTime, fmtTime, fromLocalInput, monthKey, todayKey } from "../../lib/time";
 import type { Lead } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -51,14 +51,18 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
 
   const start = fromLocalInput(`${m}-01T00:00`)!;
   const end = fromLocalInput(`${shiftMonth(m, 1)}-01T00:00`)!;
-  const [calls, settings, overdue, upcoming] = await Promise.all([
+  const [calls, settings, overdue, upcoming, fups, due] = await Promise.all([
     getCallsBetween(start, end, rep),
     getSettings(),
     getOverdueCalls(),
     getCallsBetween(new Date(), new Date(Date.now() + 14 * 86400000), rep),
+    getFollowUpsBetween(start, end, rep),
+    getFollowUpsDue(),
   ]);
   const byDay: Record<string, Lead[]> = {};
   for (const c of calls) (byDay[dayKey(c.call_at!)] ||= []).push(c);
+  const fuByDay: Record<string, Lead[]> = {};
+  for (const f of fups) (fuByDay[dayKey(f.follow_up_at!)] ||= []).push(f);
 
   const n = daysIn(m);
   const [Y, MO] = m.split("-").map(Number);
@@ -66,7 +70,9 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
   const monthLabel = new Intl.DateTimeFormat("en-CA", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(Y, MO - 1, 1)));
   const dayLabel = sel ? new Intl.DateTimeFormat("en-CA", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(sel + "T00:00:00Z")) : "";
   const selList = sel ? byDay[sel] || [] : [];
+  const selFu = sel ? fuByDay[sel] || [] : [];
   const showOverdue = searchParams.view === "overdue";
+  const showFu = searchParams.view === "followups";
 
   return (
     <Shell active="cal" title="Calendar" actions={<Link href="/new" className="btn sm">+ Book</Link>}>
@@ -74,6 +80,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
         <div className="seg">
           <Link href={q(searchParams, { view: "" })} className={!showOverdue ? "on" : ""}>Month</Link>
           <Link href={q(searchParams, { view: "overdue" })} className={showOverdue ? "on" : ""}>Needs outcome{overdue.length ? ` (${overdue.length})` : ""}</Link>
+          <Link href={q(searchParams, { view: "followups" })} className={showFu ? "on" : ""}>Follow-ups due{due.length ? ` (${due.length})` : ""}</Link>
         </div>
         <form method="get" className="row" style={{ marginLeft: "auto" }}>
           <input type="hidden" name="m" value={m} />
@@ -86,7 +93,23 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
         </form>
       </div>
 
-      {showOverdue ? (
+      {showFu ? (
+        <div className="panel">
+          <div className="ph">Follow-ups due today or overdue</div>
+          <div className="pb" style={{ display: "grid", gap: 8 }}>
+            {due.length === 0 ? <div className="small">Nothing due.</div> : due.map((l) => (
+              <Link href={`/lead/${l.id}`} className="appt over" key={l.id}>
+                <div className="time" style={{ minWidth: 110 }}>{fmtDate(l.follow_up_at)}</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div className="who">{l.business || l.contact}</div>
+                  <div className="s">{[l.next_step, l.rep].filter(Boolean).join(" · ")}</div>
+                </div>
+                <Pill stage={l.stage} />
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : showOverdue ? (
         <div className="panel">
           <div className="ph">Calls that happened with no outcome logged</div>
           <div className="pb" style={{ display: "grid", gap: 8 }}>
@@ -108,7 +131,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                 {Array.from({ length: n }).map((_, i) => {
                   const d = i + 1;
                   const key = `${m}-${String(d).padStart(2, "0")}`;
-                  const c = byDay[key]?.length || 0;
+                  const c = (byDay[key]?.length || 0) + (fuByDay[key]?.length || 0);
                   return (
                     <Link key={key} href={q(searchParams, { day: key })} className={(key === today ? "today " : "") + (key === sel ? "sel" : "")}>
                       {d}
@@ -124,8 +147,18 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
             <div className="panel">
               <div className="ph">{sel ? dayLabel : "Pick a day"} <span className="small">{sel ? `${selList.length} call${selList.length === 1 ? "" : "s"}` : ""}</span></div>
               <div className="pb" style={{ display: "grid", gap: 8 }}>
-                {sel && selList.length === 0 && <div className="small">Nothing booked.</div>}
+                {sel && selList.length === 0 && selFu.length === 0 && <div className="small">Nothing booked.</div>}
                 {selList.map((l) => <Appt key={l.id} l={l} />)}
+                {selFu.map((l) => (
+                  <Link href={`/lead/${l.id}`} className="appt" key={"f" + l.id}>
+                    <div className="time" style={{ color: "#d946ef", minWidth: 70 }}>Follow up</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="who">{l.business || l.contact}</div>
+                      <div className="s">{[l.next_step, l.rep].filter(Boolean).join(" · ")}</div>
+                    </div>
+                    <Pill stage={l.stage} />
+                  </Link>
+                ))}
               </div>
             </div>
             <div className="panel">

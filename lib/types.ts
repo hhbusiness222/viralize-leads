@@ -1,7 +1,8 @@
 export const STAGES = [
   { key: "texting", label: "Texting", color: "#623cd8", hint: "Replied, in the convo" },
   { key: "booked", label: "Call booked", color: "#155eef", hint: "Date and rep set" },
-  { key: "calldone", label: "Call done", color: "#f79009", hint: "Log the outcome and next step" },
+  { key: "calldone", label: "Call done", color: "#f79009", hint: "Log the outcome, set a follow-up date" },
+  { key: "followup", label: "Follow up", color: "#d946ef", hint: "Waiting on them, follow-up date set" },
   { key: "won", label: "Won", color: "#17b26a", hint: "Signed" },
   { key: "lost", label: "Lost", color: "#8b93a1", hint: "Said no or went quiet" },
 ] as const;
@@ -51,6 +52,7 @@ export type Lead = {
   next_step: string;
   lost_reason: string;
   value: number;
+  follow_up_at: Date | null;
   created_by: string;
   created_at: Date;
   updated_at: Date;

@@ -70,6 +70,8 @@ export async function ensureSchema() {
           by_rep text not null default ''
         )`;
       await sql`alter table leads add column if not exists value numeric not null default 0`;
+      await sql`alter table leads add column if not exists follow_up_at timestamptz`;
+      await sql`create index if not exists leads_followup_idx on leads(follow_up_at)`;
       await sql`update leads set stage = 'texting' where stage = 'interested'`;
       await sql`update leads set stage = 'calldone' where stage = 'plansent'`;
       await sql`update leads set stage = 'lost' where stage = 'ghosted'`;

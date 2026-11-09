@@ -7,6 +7,7 @@ function rowToLead(r: any): Lead {
     how: Array.isArray(r.how) ? r.how : [],
     value: Number(r.value || 0),
     call_at: r.call_at ? new Date(r.call_at) : null,
+    follow_up_at: r.follow_up_at ? new Date(r.follow_up_at) : null,
     created_at: new Date(r.created_at),
     updated_at: new Date(r.updated_at),
   };
@@ -89,4 +90,27 @@ export async function getDistinct(col: "trade" | "source"): Promise<string[]> {
       ? await sql`select distinct trade as v from leads where trade <> '' order by 1 limit 50`
       : await sql`select distinct source as v from leads where source <> '' order by 1 limit 50`;
   return rows.map((r: any) => r.v);
+}
+
+export async function getFollowUpsDue(): Promise<Lead[]> {
+  await ensureSchema();
+  const rows = await sql`
+    select * from leads
+    where follow_up_at is not null and follow_up_at <= now() + interval '12 hours'
+      and stage not in ('won','lost')
+    order by follow_up_at asc
+  `;
+  return rows.map(rowToLead);
+}
+
+export async function getFollowUpsBetween(from: Date, to: Date, rep?: string): Promise<Lead[]> {
+  await ensureSchema();
+  const rows = await sql`
+    select * from leads
+    where follow_up_at is not null and follow_up_at >= ${from} and follow_up_at < ${to}
+      and stage not in ('won','lost')
+      and (${rep || ""} = '' or rep = ${rep || ""})
+    order by follow_up_at asc
+  `;
+  return rows.map(rowToLead);
 }
