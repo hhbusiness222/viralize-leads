@@ -13,12 +13,14 @@ function rowToLead(r: any): Lead {
   };
 }
 
-export async function getSettings(): Promise<{ reps: string[]; how: string[] }> {
-  if (!hasDb()) return { reps: DEFAULT_REPS, how: DEFAULT_HOW };
+export async function getSettings(): Promise<{ reps: string[]; how: string[]; goals: { leads: number; calls: number } }> {
+  const goals = { leads: 5, calls: 2 };
+  if (!hasDb()) return { reps: DEFAULT_REPS, how: DEFAULT_HOW, goals };
   await ensureSchema();
-  const rows = await sql`select key, value from settings where key in ('reps','how')`;
-  const out = { reps: DEFAULT_REPS as string[], how: DEFAULT_HOW as string[] };
+  const rows = await sql`select key, value from settings where key in ('reps','how','goals')`;
+  const out = { reps: DEFAULT_REPS as string[], how: DEFAULT_HOW as string[], goals };
   for (const r of rows) {
+    if (r.key === "goals" && r.value && typeof r.value === "object") out.goals = { leads: Number(r.value.leads) || 5, calls: Number(r.value.calls) || 2 };
     if (r.key === "reps" && Array.isArray(r.value) && r.value.length) out.reps = r.value;
     if (r.key === "how" && Array.isArray(r.value) && r.value.length) out.how = r.value;
   }
@@ -124,4 +126,24 @@ export async function getCard(leadId: string): Promise<{ mime: string; data: Uin
   await ensureSchema();
   const rows = await sql`select mime, data from lead_files where lead_id = ${leadId}`;
   return rows[0] ? { mime: rows[0].mime, data: rows[0].data } : null;
+}
+
+export async function getTeamStats(): Promise<Record<string, { leadsToday: number; callsToday: number; callsWeek: number }>> {
+  await ensureSchema();
+  const { fromLocalInput, todayKey } = await import("./time");
+  const start = fromLocalInput(todayKey() + "T00:00")!;
+  const weekStart = new Date(start.getTime() - 6 * 86400000);
+  const out: Record<string, { leadsToday: number; callsToday: number; callsWeek: number }> = {};
+  const get = (r: string) => (out[r] ||= { leadsToday: 0, callsToday: 0, callsWeek: 0 });
+  const added = await sql`select created_by as rep, count(*)::int as n from leads where created_at >= ${start} and created_by <> '' group by 1`;
+  for (const r of added) get(r.rep).leadsToday = r.n;
+  const booked = await sql`
+    select by_rep as rep,
+      count(*) filter (where at >= ${start})::int as today,
+      count(*)::int as week
+    from activity
+    where at >= ${weekStart} and by_rep <> '' and (text like 'Call booked%' or text ilike '%· call booked%')
+    group by 1`;
+  for (const r of booked) { get(r.rep).callsToday = r.today; get(r.rep).callsWeek = r.week; }
+  return out;
 }

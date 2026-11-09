@@ -34,6 +34,10 @@ export default async function Settings({ searchParams }: { searchParams: { saved
             <div className="ph">Team</div>
             <div className="pb form">
               <div><label>Reps (one per line)</label><textarea name="reps" defaultValue={settings.reps.join("\n")} /></div>
+              <div className="grid2">
+                <div><label>Daily goal per rep: replies logged</label><input name="goal_leads" inputMode="numeric" defaultValue={String(settings.goals.leads)} /></div>
+                <div><label>Daily goal per rep: calls booked</label><input name="goal_calls" inputMode="numeric" defaultValue={String(settings.goals.calls)} /></div>
+              </div>
               <div><label>&quot;How they get clients&quot; options (one per line)</label><textarea name="how" defaultValue={settings.how.join("\n")} /></div>
               <button className="btn" type="submit">Save</button>
             </div>

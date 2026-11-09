@@ -161,6 +161,8 @@ export async function saveSettings(fd: FormData) {
   const how = lines(s(fd, "how"));
   await sql`insert into settings (key, value) values ('reps', ${sql.json(reps)}) on conflict (key) do update set value = excluded.value`;
   await sql`insert into settings (key, value) values ('how', ${sql.json(how)}) on conflict (key) do update set value = excluded.value`;
+  const goals = { leads: num(fd, "goal_leads") || 5, calls: num(fd, "goal_calls") || 2 };
+  await sql`insert into settings (key, value) values ('goals', ${sql.json(goals)}) on conflict (key) do update set value = excluded.value`;
   revalidatePath("/", "layout");
   redirect("/settings?saved=1");
 }
