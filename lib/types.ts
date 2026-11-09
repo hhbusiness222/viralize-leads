@@ -1,12 +1,9 @@
 export const STAGES = [
-  { key: "interested", label: "Interested", color: "#5aa9ff", hint: "Dropped their info on the post, not texted yet" },
-  { key: "texting", label: "Texting", color: "#5ad1ff", hint: "In the qualifying convo" },
+  { key: "texting", label: "Texting", color: "#623cd8", hint: "Replied, in the convo" },
   { key: "booked", label: "Call booked", color: "#155eef", hint: "Date and rep set" },
-  { key: "calldone", label: "Call done", color: "#ffb84d", hint: "Log what happened and the next step" },
-  { key: "plansent", label: "Plan sent", color: "#ffd36b", hint: "We sent them what we'd run" },
-  { key: "won", label: "Won", color: "#3ddc84", hint: "Signed" },
-  { key: "lost", label: "Lost", color: "#ff5c6c", hint: "Said no" },
-  { key: "ghosted", label: "Ghosted", color: "#8b93a1", hint: "Stopped replying" },
+  { key: "calldone", label: "Call done", color: "#f79009", hint: "Log the outcome and next step" },
+  { key: "won", label: "Won", color: "#17b26a", hint: "Signed" },
+  { key: "lost", label: "Lost", color: "#8b93a1", hint: "Said no or went quiet" },
 ] as const;
 
 export type StageKey = (typeof STAGES)[number]["key"];

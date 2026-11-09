@@ -17,7 +17,7 @@ export default async function Login({ searchParams }: { searchParams: { err?: st
   return (
     <div className="login-wrap">
       <form className="login" action={login}>
-        <div className="logo"><i>V</i>Viralize CRM</div>
+        <div className="logo"><span className="wordmark"><b>V</b>iralize</span></div>
         {noPw && <div className="note err">TEAM_PASSWORD isn&apos;t set. In Vercel: Settings → Environment Variables → add TEAM_PASSWORD, then Deployments → Redeploy.</div>}
         {noDb && <div className="note err">No database attached. In Vercel: Storage → Create Database → Postgres (Neon) → Connect to this project, then Redeploy.</div>}
         {!noDb && dbErr && <div className="note err">Database error: {dbErr}</div>}

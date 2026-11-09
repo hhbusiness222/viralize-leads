@@ -48,7 +48,7 @@ export async function ensureSchema() {
           trade text not null default '',
           source text not null default '',
           rep text not null default '',
-          stage text not null default 'interested',
+          stage text not null default 'texting',
           how jsonb not null default '[]',
           text_notes text not null default '',
           call_at timestamptz,
@@ -70,6 +70,9 @@ export async function ensureSchema() {
           by_rep text not null default ''
         )`;
       await sql`alter table leads add column if not exists value numeric not null default 0`;
+      await sql`update leads set stage = 'texting' where stage = 'interested'`;
+      await sql`update leads set stage = 'calldone' where stage = 'plansent'`;
+      await sql`update leads set stage = 'lost' where stage = 'ghosted'`;
       await sql`create index if not exists activity_lead_idx on activity(lead_id, at desc)`;
       await sql`create index if not exists leads_stage_idx on leads(stage)`;
       await sql`create index if not exists leads_call_idx on leads(call_at)`;

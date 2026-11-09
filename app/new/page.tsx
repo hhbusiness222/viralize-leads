@@ -39,7 +39,7 @@ export default async function NewLead() {
             </div>
             <div>
               <label>Stage</label>
-              <select name="stage" defaultValue="interested">
+              <select name="stage" defaultValue="texting">
                 {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>

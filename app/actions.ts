@@ -44,8 +44,8 @@ export async function createLead(fd: FormData) {
   const how = fd.getAll("how").map(String);
   const callAt = fromLocalInput(s(fd, "call_at"));
   const callRep = s(fd, "call_rep");
-  let stage = s(fd, "stage") || "interested";
-  if (callAt && (stage === "interested" || stage === "texting")) stage = "booked";
+  let stage = s(fd, "stage") || "texting";
+  if (callAt && stage === "texting") stage = "booked";
   const rep = s(fd, "rep") || me;
 
   await sql`
@@ -78,7 +78,7 @@ export async function updateLead(fd: FormData) {
   const prevCall = cur.call_at ? new Date(cur.call_at).getTime() : null;
   if (callAt && callAt.getTime() !== prevCall) {
     notes.push(`Call booked ${fmtDateTime(callAt)}${callRep ? " with " + callRep : ""}`);
-    if (stage === "interested" || stage === "texting") stage = "booked";
+    if (stage === "texting") stage = "booked";
   }
   if (!callAt && prevCall) notes.push("Call removed");
   if (outcome && outcome !== cur.outcome) {

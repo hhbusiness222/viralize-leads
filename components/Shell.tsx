@@ -25,7 +25,7 @@ export default function Shell({ children, active, title, actions }: { children: 
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="logo"><i>V</i>Viralize</div>
+        <div className="logo"><span className="wordmark"><b>V</b>iralize</span></div>
         <div className="sec">Sub-account</div>
         {nav}
         <div className="foot"><b>{rep || "No name picked"}</b>Logged in</div>
@@ -57,7 +57,7 @@ export function initials(s: string) {
   return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
 }
 export function colorFor(s: string) {
-  const palette = ["#7c5cff", "#155eef", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488"];
+  const palette = ["#623cd8", "#155eef", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488"];
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return palette[h % palette.length];
