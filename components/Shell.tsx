@@ -57,7 +57,7 @@ export function initials(s: string) {
   return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
 }
 export function colorFor(s: string) {
-  const palette = ["#155eef", "#7a5af8", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488"];
+  const palette = ["#7c5cff", "#155eef", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488"];
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return palette[h % palette.length];

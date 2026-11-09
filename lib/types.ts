@@ -1,7 +1,7 @@
 export const STAGES = [
   { key: "interested", label: "Interested", color: "#5aa9ff", hint: "Dropped their info on the post, not texted yet" },
   { key: "texting", label: "Texting", color: "#5ad1ff", hint: "In the qualifying convo" },
-  { key: "booked", label: "Call booked", color: "#7c5cff", hint: "Date and rep set" },
+  { key: "booked", label: "Call booked", color: "#155eef", hint: "Date and rep set" },
   { key: "calldone", label: "Call done", color: "#ffb84d", hint: "Log what happened and the next step" },
   { key: "plansent", label: "Plan sent", color: "#ffd36b", hint: "We sent them what we'd run" },
   { key: "won", label: "Won", color: "#3ddc84", hint: "Signed" },
@@ -23,7 +23,7 @@ export const OUTCOMES = [
   "Cancelled",
 ];
 
-export const DEFAULT_REPS = ["Hunter", "Jamal", "Jaxson", "Cameron", "Marcus"];
+export const DEFAULT_REPS = ["Hunter", "Jamal", "Jaxson", "Cameron", "Marcus", "Headsick", "Sebastian"];
 export const DEFAULT_HOW = [
   "Word of mouth",
   "Referrals",
