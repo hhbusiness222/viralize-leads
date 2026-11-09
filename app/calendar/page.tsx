@@ -76,20 +76,21 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
 
   return (
     <Shell active="cal" title="Calendar" actions={<Link href="/new" className="btn sm">+ Book</Link>}>
-      <div className="toolbar" style={{ marginBottom: 10 }}>
+      <div className="cal-tools">
         <div className="seg">
           <Link href={q(searchParams, { view: "" })} className={!showOverdue ? "on" : ""}>Month</Link>
-          <Link href={q(searchParams, { view: "overdue" })} className={showOverdue ? "on" : ""}>Needs outcome{overdue.length ? ` (${overdue.length})` : ""}</Link>
-          <Link href={q(searchParams, { view: "followups" })} className={showFu ? "on" : ""}>Follow-ups due{due.length ? ` (${due.length})` : ""}</Link>
+          <Link href={q(searchParams, { view: "overdue" })} className={showOverdue ? "on" : ""}>No outcome{overdue.length ? ` (${overdue.length})` : ""}</Link>
+          <Link href={q(searchParams, { view: "followups" })} className={showFu ? "on" : ""}>Follow-ups{due.length ? ` (${due.length})` : ""}</Link>
         </div>
-        <form method="get" className="row" style={{ marginLeft: "auto" }}>
+        <form method="get" className="repform">
           <input type="hidden" name="m" value={m} />
           {sel && <input type="hidden" name="day" value={sel} />}
-          <select name="rep" defaultValue={rep} style={{ width: "auto" }}>
+          {searchParams.view && <input type="hidden" name="view" value={searchParams.view} />}
+          <select name="rep" defaultValue={rep}>
             <option value="">All reps</option>
             {settings.reps.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <button className="btn ghost sm" type="submit">Filter</button>
+          <button className="btn ghost sm" type="submit">Go</button>
         </form>
       </div>
 
@@ -117,7 +118,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
           </div>
         </div>
       ) : (
-        <div className="detail" style={{ gridTemplateColumns: "minmax(0,1fr) 380px" }}>
+        <div className="cal-layout">
           <div className="panel">
             <div className="pb">
               <div className="cal-head">
@@ -140,7 +141,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                   );
                 })}
               </div>
-              <div className="small" style={{ marginTop: 8 }}>Today: {today}. Tap a day to see its calls.</div>
+
             </div>
           </div>
           <div style={{ display: "grid", gap: 16 }}>

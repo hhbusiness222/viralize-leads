@@ -11,7 +11,7 @@ export default async function NewLead() {
   const me = currentRep();
   return (
     <Shell active="add" title="Add lead">
-      <form action={createLead} className="panel" style={{ maxWidth: 760 }}>
+      <form action={createLead} className="panel" style={{ maxWidth: 760 }} encType="multipart/form-data">
         <div className="ph">Contact info <span className="small">Someone dropped their info on the post</span></div>
         <div className="pb form">
           <div className="grid2">
@@ -25,6 +25,11 @@ export default async function NewLead() {
           <div className="grid2">
             <div><label>Trade / niche</label><input name="trade" list="trades" placeholder="Plumber, roofer, snow removal..." /></div>
             <div><label>Source (FB group)</label><input name="source" list="sources" placeholder="Ottawa Contractors Network" /></div>
+          </div>
+          <div>
+            <label>Business card screenshot</label>
+            <input name="card" type="file" accept="image/*" className="file" />
+            <div className="small" style={{ marginTop: 4 }}>Screenshot of their comment / business card from the post. Optional.</div>
           </div>
         </div>
         <div className="ph">Opportunity</div>

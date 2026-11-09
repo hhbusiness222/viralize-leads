@@ -114,3 +114,14 @@ export async function getFollowUpsBetween(from: Date, to: Date, rep?: string): P
   `;
   return rows.map(rowToLead);
 }
+
+export async function hasCard(leadId: string): Promise<boolean> {
+  await ensureSchema();
+  const rows = await sql`select 1 from lead_files where lead_id = ${leadId}`;
+  return rows.length > 0;
+}
+export async function getCard(leadId: string): Promise<{ mime: string; data: Uint8Array } | null> {
+  await ensureSchema();
+  const rows = await sql`select mime, data from lead_files where lead_id = ${leadId}`;
+  return rows[0] ? { mime: rows[0].mime, data: rows[0].data } : null;
+}

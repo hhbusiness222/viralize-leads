@@ -2,15 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Shell from "../../../components/Shell";
 import { Avatar, Pill, money } from "../../../components/LeadCard";
-import { addNote, deleteLead, setStage, updateLead } from "../../actions";
-import { getActivity, getLead, getSettings } from "../../../lib/data";
+import { addNote, deleteLead, removeCard, setStage, updateLead } from "../../actions";
+import { getActivity, getLead, getSettings, hasCard } from "../../../lib/data";
 import { OUTCOMES, STAGES } from "../../../lib/types";
 import { fmtDate, fmtDateTime, toDateInput, toLocalInput } from "../../../lib/time";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadPage({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; del?: string } }) {
-  const [lead, acts, settings] = await Promise.all([getLead(params.id), getActivity(params.id), getSettings()]);
+  const [lead, acts, settings, card] = await Promise.all([getLead(params.id), getActivity(params.id), getSettings(), hasCard(params.id)]);
   if (!lead) notFound();
   const tel = lead.phone.replace(/[^\d+]/g, "");
   const howOpts = Array.from(new Set([...settings.how, ...lead.how]));
@@ -53,6 +53,20 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
               <div>Added</div><div>{fmtDateTime(lead.created_at)}{lead.created_by ? " by " + lead.created_by : ""}</div>
             </div>
           </div>
+          <div className="ph">Business card screenshot</div>
+          <div className="pb">
+            {card ? (
+              <>
+                <a href={`/api/card/${lead.id}`} target="_blank" rel="noreferrer"><img src={`/api/card/${lead.id}`} alt="Business card screenshot" className="cardimg" /></a>
+                <form action={removeCard} style={{ marginTop: 8 }}>
+                  <input type="hidden" name="id" value={lead.id} />
+                  <button className="btn ghost sm" type="submit">Remove screenshot</button>
+                </form>
+              </>
+            ) : (
+              <div className="small">None yet. Add one in Details below.</div>
+            )}
+          </div>
           <div className="ph">Move stage</div>
           <div className="pb">
             <div className="chips">
@@ -71,7 +85,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
 
         {/* RIGHT: details + activity */}
         <div style={{ display: "grid", gap: 16 }}>
-          <form className="panel" action={updateLead}>
+          <form className="panel" action={updateLead} encType="multipart/form-data">
             <input type="hidden" name="id" value={lead.id} />
             <div className="ph">Details</div>
             <div className="pb form">
@@ -109,6 +123,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
                 </div>
               </div>
               <div><label>Text convo notes</label><textarea name="text_notes" defaultValue={lead.text_notes} /></div>
+              <div><label>{card ? "Replace business card screenshot" : "Business card screenshot"}</label><input name="card" type="file" accept="image/*" className="file" /></div>
             </div>
             <div className="ph">Call</div>
             <div className="pb form">

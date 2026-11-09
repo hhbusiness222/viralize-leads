@@ -12,7 +12,7 @@ async function expected() {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/login") || pathname.startsWith("/_next") || pathname === "/favicon.ico" || pathname === "/manifest.webmanifest" || pathname.startsWith("/icon") || pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/login") || pathname.startsWith("/_next") || pathname === "/favicon.ico" || pathname === "/manifest.webmanifest" || pathname.startsWith("/icon")) {
     return NextResponse.next();
   }
   const token = req.cookies.get(AUTH_COOKIE)?.value;

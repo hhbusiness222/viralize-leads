@@ -138,6 +138,21 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-wei
 @media(min-width:900px){.sticky-save{bottom:0}}
 
 /* calendar */
+.cal-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.cal-tools{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.cal-tools .seg{flex:1 1 auto;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.cal-tools .seg::-webkit-scrollbar{display:none}
+.cal-tools .seg a{display:inline-block}
+.repform{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+.repform select{width:auto;padding:7px 30px 7px 10px;font-size:14px}
+@media(max-width:899px){
+  .cal-layout{grid-template-columns:1fr;gap:12px}
+  .cal-tools{flex-wrap:nowrap}
+  .cal-tools .seg{flex:1 1 0;min-width:0}
+  .repform select{max-width:120px}
+  .cal a,.cal .blank{min-height:40px;aspect-ratio:auto;height:44px;padding:4px 6px;font-size:12px}
+  .cal .cnt{right:4px;bottom:3px;font-size:10px}
+}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .cal-head b{font-size:16px;font-weight:700}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -159,3 +174,7 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-wei
 .login{width:100%;max-width:400px;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:28px 24px;display:grid;gap:14px;box-shadow:var(--shadow)}
 .login .logo{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:20px;margin-bottom:6px}
 .login .wordmark{font-size:26px}
+
+input.file{padding:8px 10px;font-size:14px;background:var(--white)}
+input.file::file-selector-button{background:var(--blue-l);color:var(--blue);border:none;border-radius:6px;padding:7px 10px;font-weight:700;margin-right:10px;cursor:pointer}
+.cardimg{display:block;max-width:100%;max-height:320px;border-radius:8px;border:1px solid var(--line);object-fit:contain;background:#f3f5f9}

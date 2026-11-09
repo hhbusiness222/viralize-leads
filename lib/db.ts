@@ -79,6 +79,13 @@ export async function ensureSchema() {
       await sql`create index if not exists leads_stage_idx on leads(stage)`;
       await sql`create index if not exists leads_call_idx on leads(call_at)`;
       await sql`
+        create table if not exists lead_files (
+          lead_id text primary key references leads(id) on delete cascade,
+          mime text not null,
+          data bytea not null,
+          updated_at timestamptz not null default now()
+        )`;
+      await sql`
         create table if not exists settings (
           key text primary key,
           value jsonb not null

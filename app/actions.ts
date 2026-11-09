@@ -7,6 +7,7 @@ import { sql, ensureSchema } from "../lib/db";
 import { AUTH_COOKIE, REP_COOKIE, currentRep, expectedToken } from "../lib/auth";
 import { fmtDate, fmtDateTime, fromDateInput, fromLocalInput } from "../lib/time";
 import { STAGE_MAP } from "../lib/types";
+import { shrinkImage } from "../lib/images";
 
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const year = 60 * 60 * 24 * 365;
@@ -53,7 +54,9 @@ export async function createLead(fd: FormData) {
     values (${id}, ${s(fd, "business")}, ${s(fd, "contact")}, ${s(fd, "phone")}, ${s(fd, "email")}, ${s(fd, "trade")}, ${s(fd, "source")},
             ${rep}, ${stage}, ${sql.json(how)}, ${s(fd, "text_notes")}, ${callAt}, ${callRep}, ${num(fd, "value")}, ${me})
   `;
-  const note = "Lead added" + (callAt ? ` · call booked ${fmtDateTime(callAt)}${callRep ? " with " + callRep : ""}` : "");
+  const card = await shrinkImage(fd.get("card") as File | null);
+  if (card) await sql`insert into lead_files (lead_id, mime, data) values (${id}, ${card.mime}, ${card.data})`;
+  const note = "Lead added" + (card ? " · business card attached" : "") + (callAt ? ` · call booked ${fmtDateTime(callAt)}${callRep ? " with " + callRep : ""}` : "");
   await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${note}, ${me})`;
   revalidatePath("/");
   revalidatePath("/calendar");
@@ -102,6 +105,12 @@ export async function updateLead(fd: FormData) {
       stage = ${stage}, value = ${num(fd, "value")}, follow_up_at = ${followUp}, updated_at = now()
     where id = ${id}
   `;
+  const card = await shrinkImage(fd.get("card") as File | null);
+  if (card) {
+    await sql`insert into lead_files (lead_id, mime, data, updated_at) values (${id}, ${card.mime}, ${card.data}, now())
+              on conflict (lead_id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()`;
+    notes.push("Business card screenshot added");
+  }
   await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${notes.join(" · ") || "Edited details"}, ${me})`;
   revalidatePath("/");
   revalidatePath("/calendar");
@@ -154,4 +163,12 @@ export async function saveSettings(fd: FormData) {
   await sql`insert into settings (key, value) values ('how', ${sql.json(how)}) on conflict (key) do update set value = excluded.value`;
   revalidatePath("/", "layout");
   redirect("/settings?saved=1");
+}
+
+export async function removeCard(fd: FormData) {
+  await ensureSchema();
+  const id = s(fd, "id");
+  await sql`delete from lead_files where lead_id = ${id}`;
+  await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${"Business card screenshot removed"}, ${currentRep()})`;
+  revalidatePath(`/lead/${id}`);
 }
