@@ -212,3 +212,12 @@ details.pb summary .small{margin-left:auto;font-weight:500}
 .bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;opacity:.85}
 .bar-wrap span{position:relative;font-size:11px;font-weight:700;padding:0 8px;line-height:20px}
 @media(max-width:899px){.goals th:nth-child(4),.goals td:nth-child(4){display:none}.goals th,.goals td{padding:8px 6px}.bar-wrap{min-width:70px}}
+
+/* drag and drop */
+.drag{touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:grab}
+.drag.ghost{opacity:.35}
+.drag.lifted{cursor:grabbing;transform:rotate(2deg) scale(1.02);box-shadow:0 12px 28px rgba(16,24,40,.22);border-radius:8px}
+.drag a{-webkit-user-drag:none}
+.board.dragging{scroll-snap-type:none}
+.col.over{background:#e4dcfa;outline:2px dashed var(--blue);outline-offset:-2px}
+.drop-hint{text-align:center;padding:18px 6px}

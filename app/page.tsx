@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Shell from "../components/Shell";
-import OppCard, { money } from "../components/LeadCard";
+import OppCard from "../components/LeadCard";
+import Board from "../components/Board";
 import { getFollowUpsDue, getLeads, getOverdueCalls, getSettings } from "../lib/data";
 import { STAGES } from "../lib/types";
 
@@ -23,9 +24,6 @@ export default async function Opportunities({ searchParams }: { searchParams: SP
     getOverdueCalls(),
     getFollowUpsDue(),
   ]);
-  const byStage: Record<string, typeof leads> = {};
-  for (const s of STAGES) byStage[s.key] = [];
-  for (const l of leads) (byStage[l.stage] ||= []).push(l);
 
   return (
     <Shell
@@ -61,28 +59,11 @@ export default async function Opportunities({ searchParams }: { searchParams: SP
         {(searchParams.q || searchParams.rep) && <Link className="btn ghost sm" href="/">Clear</Link>}
       </form>
 
-      <div className="board">
-        {STAGES.map((s) => {
-          const items = byStage[s.key] || [];
-          const total = items.reduce((a, l) => a + (l.value || 0), 0);
-          return (
-            <div className="col" key={s.key} style={{ ["--c" as any]: s.color }}>
-              <div className="ch">
-                <b>{s.label}</b>
-                <span className="meta">{items.length} · {money(total) || "$0"}</span>
-              </div>
-              <div className="cards">
-                {items.length === 0 ? (
-                  <div className="small" style={{ textAlign: "center", padding: "18px 6px" }}>Empty</div>
-                ) : (
-                  items.map((l) => <OppCard key={l.id} lead={l} reps={settings.reps} />)
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="small" style={{ marginTop: 6 }}>Swipe sideways to move between stages. Tap a card to open it and change its stage.</div>
+      <Board
+        cols={STAGES.map((s) => ({ key: s.key, label: s.label, color: s.color }))}
+        cards={leads.map((l) => ({ id: l.id, stage: l.stage, value: l.value || 0, node: <OppCard lead={l} reps={settings.reps} /> }))}
+      />
+      <div className="small" style={{ marginTop: 6 }}>Drag a card to another column to change its stage. On phone: tap and hold, then drag. Tap to open.</div>
     </Shell>
   );
 }
