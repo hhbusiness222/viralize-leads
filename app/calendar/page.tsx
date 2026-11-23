@@ -1,19 +1,21 @@
 import Link from "next/link";
 import Shell, { colorFor } from "../../components/Shell";
 import { Pill } from "../../components/LeadCard";
-import { getCallsBetween, getFollowUpsDue, getLead, getOverdueCalls, getSettings, hasCard } from "../../lib/data";
+import { getBookableLeads, getCallsBetween, getFollowUpsDue, getLead, getOverdueCalls, getSettings, hasCard } from "../../lib/data";
+import { bookCall } from "../actions";
+import { CALL_LENGTHS } from "../../lib/types";
 import { getAvailability, fmtMin } from "../../lib/availability";
 import { fmtDate, fmtDateTime, fmtTime, fromLocalInput, todayKey, zonedParts } from "../../lib/time";
 import type { Lead } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
-type SP = { date?: string; rep?: string; view?: string; open?: string };
+type SP = { date?: string; rep?: string; view?: string; open?: string; book?: string };
 
 const START = 8 * 60;
 const END = 22 * 60;
 const HOUR_PX = 88;
-const CALL_MIN = 30;
+const SLOT = 15;
 const top = (m: number) => ((Math.max(m, START) - START) / 60) * HOUR_PX;
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -55,6 +57,10 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
     searchParams.open ? getLead(searchParams.open) : Promise.resolve(null),
   ]);
   const openCard = openLead ? await hasCard(openLead.id) : false;
+  // book=HH:MM_Rep
+  const bm = /^(\d{2}):(\d{2})_(.+)$/.exec(searchParams.book || "");
+  const book = bm ? { min: Number(bm[1]) * 60 + Number(bm[2]), rep: bm[3] } : null;
+  const bookable = book ? await getBookableLeads() : [];
 
   const only = searchParams.rep && settings.reps.includes(searchParams.rep) ? searchParams.rep : "";
   const hasUnassigned = calls.some((c) => !c.call_rep || !settings.reps.includes(c.call_rep));
@@ -66,14 +72,15 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
   const nowP = zonedParts(new Date());
   const nowMin = nowP.h * 60 + nowP.min;
   const dateLabel = new Intl.DateTimeFormat("en-CA", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(date + "T00:00:00Z"));
-  const closeHref = q(searchParams, { open: "" });
+  const closeHref = q(searchParams, { open: "", book: "" });
+  const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
   return (
     <Shell
       active="cal"
       title="Calendar"
       reps={settings.reps}
-      actions={<><Link href="/availability" className="btn ghost sm">Availability</Link><Link href="/new" className="btn sm">+ Book</Link></>}
+      actions={<><Link href="/availability" className="btn ghost sm">Availability</Link><Link href="/new" className="btn sm">+ Book meeting</Link></>}
     >
       <div className="cal-tools">
         <div className="seg">
@@ -148,15 +155,27 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                 {lanes.map((r, lane) => <span key={"g" + r} className="wk-lane" style={{ left: `${(lane / lanes.length) * 100}%`, width: `${100 / lanes.length}%` }} />)}
                 {avail.filter((w) => w.dow === dow && lanes.includes(w.rep) && w.e > START && w.s < END).map((w, i) => {
                   const lane = lanes.indexOf(w.rep);
+                  const c = colorFor(w.rep, settings.reps);
+                  const pos = { left: `${(lane / lanes.length) * 100}%`, width: `${100 / lanes.length}%` };
+                  const slots = [];
+                  for (let m = Math.max(w.s, START); m + SLOT <= Math.min(w.e, END); m += SLOT) slots.push(m);
                   return (
-                    <span key={"a" + i} className="cal-avail" title={`${w.rep} free ${fmtMin(w.s)}-${fmtMin(w.e)}`}
-                      style={{ top: top(w.s), height: top(Math.min(w.e, END)) - top(w.s), left: `${(lane / lanes.length) * 100}%`, width: `${100 / lanes.length}%`, background: colorFor(w.rep, settings.reps) + "14" }} />
+                    <span key={"a" + i}>
+                      <span className="cal-avail" style={{ ...pos, top: top(w.s), height: top(Math.min(w.e, END)) - top(w.s), background: c + "1f" }} />
+                      {slots.map((m, si) => (
+                        <Link key={m} href={q(searchParams, { book: `${hhmm(m)}_${w.rep}`, open: "" })} scroll={false} className={"cal-slot" + (si === 0 ? " first" : "")}
+                          style={{ ...pos, top: top(m), height: top(m + SLOT) - top(m), ["--c" as any]: c }} title={`Book ${w.rep} at ${fmtMin(m)}`}>
+                          <span><b className="bk-full">+ Book meeting</b><b className="bk-short">+ Book</b></span>
+                        </Link>
+                      ))}
+                    </span>
                   );
                 })}
                 {calls.filter((l) => lanes.includes(laneOf(l))).map((l) => {
                   const p = zonedParts(l.call_at!);
                   const m = p.h * 60 + p.min;
-                  if (m + CALL_MIN <= START || m >= END) return null;
+                  const dur = l.call_len || 30;
+                  if (m + dur <= START || m >= END) return null;
                   const r = laneOf(l);
                   const lane = lanes.indexOf(r);
                   const c = r === "Unassigned" ? "#64748b" : colorFor(r, settings.reps);
@@ -167,20 +186,76 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                       href={q(searchParams, { open: l.id })}
                       scroll={false}
                       className={"wk-blk cal-blk" + (lanes.length > 2 ? " tight" : "") + (isOpen ? " on" : "")}
-                      style={{ top: top(m) + 1, height: top(m + CALL_MIN) - top(m) - 2, left: `calc(${(lane / lanes.length) * 100}% + 2px)`, width: `calc(${100 / lanes.length}% - 4px)`, background: c }}
+                      style={{ top: top(m) + 1, height: Math.max(top(m + dur) - top(m) - 2, 16), left: `calc(${(lane / lanes.length) * 100}% + 2px)`, width: `calc(${100 / lanes.length}% - 4px)`, background: c }}
                       title={`${l.business} · ${fmtTime(l.call_at)} · ${r}`}
                     >
                       <b>{l.business || l.contact || "Lead"}</b>
-                      <span>{fmtTime(l.call_at)}</span>
+                      <span>{fmtTime(l.call_at)} · {dur}m</span>
                     </Link>
                   );
                 })}
               </div>
             </div>
           </div>
-          <div className="small" style={{ marginTop: 8 }}>Coloured blocks are booked calls. Light shading is when that guy is free. Tap a call to see the contact.</div>
+          <div className="small" style={{ marginTop: 8 }}>Solid blocks are booked calls, tap one to see the contact. Shaded = that guy is free, tap any shaded time to book a meeting.</div>
         </>
       )}
+
+      {book && (() => {
+        const c = colorFor(book.rep, settings.reps);
+        const repWins = avail.filter((w) => w.rep === book.rep && w.dow === dow);
+        const starts: number[] = [];
+        for (const w of repWins) for (let m = w.s; m + 10 <= w.e; m += SLOT) starts.push(m);
+        if (!starts.includes(book.min)) starts.push(book.min);
+        starts.sort((a, b) => a - b);
+        const newHref = `/new?date=${date}&time=${hhmm(book.min)}&rep=${encodeURIComponent(book.rep)}`;
+        return (
+          <>
+            <Link href={closeHref} scroll={false} className="sheet-bg" aria-label="Close" />
+            <aside className="sheet">
+              <div className="sheet-h">
+                <div>
+                  <div className="sheet-t">Book meeting</div>
+                  <div className="small">{dateLabel}</div>
+                </div>
+                <Link href={closeHref} scroll={false} className="btn ghost sm">✕</Link>
+              </div>
+              <form action={bookCall} className="form">
+                <input type="hidden" name="call_rep" value={book.rep} />
+                <div className="sheet-call" style={{ borderColor: c }}>
+                  <span>With <b style={{ color: c }}>{book.rep}</b></span>
+                </div>
+                <div className="grid2">
+                  <div>
+                    <label>Start time</label>
+                    <select name="call_at" defaultValue={`${date}T${hhmm(book.min)}`}>
+                      {starts.map((m) => <option key={m} value={`${date}T${hhmm(m)}`}>{fmtMin(m)}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label>Meeting length</label>
+                  <div className="chips">
+                    {CALL_LENGTHS.map((l) => (
+                      <label key={l} className="chip"><input type="radio" name="call_len" value={l} defaultChecked={l === 15} />{l} min</label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label>Who&apos;s the meeting with?</label>
+                  <select name="id" required defaultValue="">
+                    <option value="" disabled>Pick a lead</option>
+                    {bookable.map((l) => <option key={l.id} value={l.id}>{l.business || l.contact}{l.contact && l.business ? ` (${l.contact})` : ""}</option>)}
+                  </select>
+                  {bookable.length === 0 && <div className="small" style={{ marginTop: 4 }}>No open leads to book. Add a new one below.</div>}
+                </div>
+                <button className="btn wide" type="submit" disabled={bookable.length === 0}>Book meeting</button>
+                <Link href={newHref} className="btn ghost wide">New lead instead</Link>
+              </form>
+            </aside>
+          </>
+        );
+      })()}
 
       {openLead && (
         <>
@@ -194,7 +269,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
               <Link href={closeHref} scroll={false} className="btn ghost sm">✕</Link>
             </div>
             <div className="sheet-call" style={{ borderColor: colorFor(openLead.call_rep, settings.reps) }}>
-              <b>{fmtDateTime(openLead.call_at)}</b>
+              <b>{fmtDateTime(openLead.call_at)} · {openLead.call_len || 30} min</b>
               <span>with <b style={{ color: colorFor(openLead.call_rep, settings.reps) }}>{openLead.call_rep || "no rep set"}</b></span>
             </div>
             <div className="row" style={{ margin: "12px 0" }}>

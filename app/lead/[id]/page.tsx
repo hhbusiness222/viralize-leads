@@ -129,7 +129,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
             </div>
             <div className="ph">Call</div>
             <div className="pb form">
-              <BookingPicker {...booking} initial={initialPick(lead.call_at, lead.call_rep)} />
+              <BookingPicker {...booking} initial={initialPick(lead.call_at, lead.call_rep)} initialLen={lead.call_len} />
               <div className="grid2">
                 <div><label>Follow up on</label><input name="follow_up_at" type="date" defaultValue={toDateInput(lead.follow_up_at)} /></div>
                 <div>

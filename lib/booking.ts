@@ -16,7 +16,7 @@ export async function getBookingData(excludeLeadId?: string) {
     .filter((c) => c.id !== excludeLeadId && c.call_at && c.call_rep)
     .map((c) => {
       const p = zonedParts(c.call_at!);
-      return { rep: c.call_rep, date: dayKey(c.call_at!), min: p.h * 60 + p.min, name: c.business || c.contact || "Call" };
+      return { rep: c.call_rep, date: dayKey(c.call_at!), min: p.h * 60 + p.min, len: c.call_len || 30, name: c.business || c.contact || "Call" };
     });
   return { reps: settings.reps, colors, windows, booked, today: todayKey() };
 }

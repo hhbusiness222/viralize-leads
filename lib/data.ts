@@ -8,6 +8,7 @@ function rowToLead(r: any): Lead {
     value: Number(r.value || 0),
     call_at: r.call_at ? new Date(r.call_at) : null,
     follow_up_at: r.follow_up_at ? new Date(r.follow_up_at) : null,
+    call_len: Number(r.call_len) || 30,
     created_at: new Date(r.created_at),
     updated_at: new Date(r.updated_at),
   };
@@ -146,4 +147,10 @@ export async function getTeamStats(): Promise<Record<string, { leadsToday: numbe
     group by 1`;
   for (const r of booked) { get(r.rep).callsToday = r.today; get(r.rep).callsWeek = r.week; }
   return out;
+}
+
+export async function getBookableLeads(): Promise<Lead[]> {
+  await ensureSchema();
+  const rows = await sql`select * from leads where stage in ('texting','followup','calldone') order by updated_at desc limit 100`;
+  return rows.map(rowToLead);
 }

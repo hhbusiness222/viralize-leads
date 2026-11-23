@@ -8,7 +8,7 @@ import { getBookingData } from "../../lib/booking";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewLead() {
+export default async function NewLead({ searchParams }: { searchParams: { date?: string; time?: string; rep?: string } }) {
   const [settings, trades, sources, booking] = await Promise.all([getSettings(), getDistinct("trade"), getDistinct("source"), getBookingData()]);
   const me = currentRep();
   return (
@@ -72,7 +72,12 @@ export default async function NewLead() {
         </div>
         <div className="ph">Book the call <span className="small">optional</span></div>
         <div className="pb form">
-          <BookingPicker {...booking} />
+          <BookingPicker
+            {...booking}
+            initial={/^\d{4}-\d{2}-\d{2}$/.test(searchParams.date || "") && /^\d{2}:\d{2}$/.test(searchParams.time || "")
+              ? { date: searchParams.date!, min: Number(searchParams.time!.slice(0, 2)) * 60 + Number(searchParams.time!.slice(3)), rep: searchParams.rep || "" }
+              : null}
+          />
           <button className="btn wide" type="submit">Save lead</button>
         </div>
       </form>

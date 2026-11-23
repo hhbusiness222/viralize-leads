@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 
 type Win = { rep: string; dow: number; s: number; e: number };
-type Booked = { rep: string; date: string; min: number; name: string };
+type Booked = { rep: string; date: string; min: number; len: number; name: string };
 
 const START = 8 * 60;
 const END = 22 * 60;
-const STEP = 30;
+const STEP = 15;
+const LENGTHS = [10, 15, 20, 30, 45, 60];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const addDays = (k: string, n: number) => new Date(Date.parse(k + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10);
 const dowOf = (k: string) => (new Date(k + "T00:00:00Z").getUTCDay() + 6) % 7;
@@ -18,7 +19,7 @@ const label = (m: number) => {
 };
 
 export default function BookingPicker({
-  reps, colors, windows, booked, today, initial,
+  reps, colors, windows, booked, today, initial, initialLen,
 }: {
   reps: string[];
   colors: Record<string, string>;
@@ -26,7 +27,9 @@ export default function BookingPicker({
   booked: Booked[];
   today: string;
   initial?: { date: string; min: number; rep: string } | null;
+  initialLen?: number;
 }) {
+  const [len, setLen] = useState(initialLen || 15);
   const [date, setDate] = useState(initial?.date || today);
   const [pick, setPick] = useState<{ date: string; min: number; rep: string } | null>(initial || null);
   const [manual, setManual] = useState(false);
@@ -37,7 +40,9 @@ export default function BookingPicker({
   const slots = Array.from({ length: (END - START) / STEP }, (_, i) => START + i * STEP);
 
   const free = (rep: string, m: number) => windows.some((w) => w.rep === rep && w.dow === dow && w.s <= m && m + STEP <= w.e);
-  const takenBy = (rep: string, m: number) => booked.find((b) => b.rep === rep && b.date === date && b.min < m + STEP && m < b.min + STEP);
+  const takenBy = (rep: string, m: number) => booked.find((b) => b.rep === rep && b.date === date && b.min < m + STEP && m < b.min + b.len);
+  const clash = pick ? booked.find((b) => b.rep === pick.rep && b.date === pick.date && b.min < pick.min + len && pick.min < b.min + b.len) : undefined;
+  const fits = pick ? windows.some((w) => w.rep === pick.rep && w.dow === dowOf(pick.date) && w.s <= pick.min && pick.min + len <= w.e) : true;
   const freeCount = useMemo(
     () => reps.filter((r) => windows.some((w) => w.rep === r && w.dow === dow)).length,
     [reps, windows, dow]
@@ -52,11 +57,25 @@ export default function BookingPicker({
     <div className="bp">
       <input type="hidden" name="call_at" value={value} />
       <input type="hidden" name="call_rep" value={pick?.rep || ""} />
+      <input type="hidden" name="call_len" value={String(len)} />
+
+      <div className="bp-len">
+        <span className="small" style={{ fontWeight: 700 }}>Meeting length</span>
+        <div className="seg">
+          {LENGTHS.map((l) => (
+            <button type="button" key={l} className={l === len ? "on" : ""} onClick={() => setLen(l)}>{l}m</button>
+          ))}
+        </div>
+      </div>
 
       <div className={"bp-sel" + (pick ? " on" : "")} style={pick ? { borderColor: colors[pick.rep] } : undefined}>
         {pick ? (
           <>
-            <div><b>{nice}</b> with <b style={{ color: colors[pick.rep] }}>{pick.rep}</b></div>
+            <div>
+              <b>{nice} - {label(pick.min + len)}</b> ({len} min) with <b style={{ color: colors[pick.rep] }}>{pick.rep || "nobody yet"}</b>
+              {clash && <div className="bp-warn">Overlaps {pick.rep}&apos;s call with {clash.name}</div>}
+              {!clash && pick.rep && !fits && <div className="bp-warn">Outside {pick.rep}&apos;s availability</div>}
+            </div>
             <button type="button" className="btn ghost sm" onClick={() => setPick(null)}>Clear</button>
           </>
         ) : (
@@ -88,7 +107,8 @@ export default function BookingPicker({
             {reps.map((r) => {
               const t = takenBy(r, m);
               const f = free(r, m);
-              const sel = pick && pick.date === date && pick.min === m && pick.rep === r;
+              const sel = !!pick && pick.date === date && pick.rep === r && m >= pick.min && m < pick.min + len;
+              const selStart = sel && m === pick!.min;
               return (
                 <button
                   type="button"
@@ -99,7 +119,7 @@ export default function BookingPicker({
                   style={sel ? { background: colors[r] } : f ? { background: colors[r] + "2e" } : undefined}
                   title={t ? `${r} has ${t.name} at ${label(t.min)}` : `${r} ${label(m)}${f ? "" : " (not in his availability)"}`}
                 >
-                  {t ? <span>{t.name}</span> : sel ? <span>{label(m)}</span> : null}
+                  {t ? (t.min >= m && t.min < m + STEP ? <span>{t.name}</span> : null) : selStart ? <span>{label(m)}</span> : null}
                 </button>
               );
             })}

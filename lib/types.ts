@@ -53,6 +53,7 @@ export type Lead = {
   lost_reason: string;
   value: number;
   follow_up_at: Date | null;
+  call_len: number;
   created_by: string;
   created_at: Date;
   updated_at: Date;
@@ -65,3 +66,5 @@ export type Activity = {
   text: string;
   by_rep: string;
 };
+
+export const CALL_LENGTHS = [10, 15, 20, 30, 45, 60];

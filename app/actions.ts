@@ -11,6 +11,7 @@ import { shrinkImage } from "../lib/images";
 
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const year = 60 * 60 * 24 * 365;
+const len = (fd: FormData) => { const n = Number(String(fd.get("call_len") ?? "")); return [10, 15, 20, 30, 45, 60].includes(n) ? n : 30; };
 const num = (fd: FormData, k: string) => { const n = Number(String(fd.get(k) ?? "").replace(/[^0-9.]/g, "")); return isFinite(n) ? n : 0; };
 
 export async function login(fd: FormData) {
@@ -50,13 +51,13 @@ export async function createLead(fd: FormData) {
   const rep = s(fd, "rep") || me;
 
   await sql`
-    insert into leads (id, business, contact, phone, email, trade, source, rep, stage, how, text_notes, call_at, call_rep, value, created_by)
+    insert into leads (id, business, contact, phone, email, trade, source, rep, stage, how, text_notes, call_at, call_rep, call_len, value, created_by)
     values (${id}, ${s(fd, "business")}, ${s(fd, "contact")}, ${s(fd, "phone")}, ${s(fd, "email")}, ${s(fd, "trade")}, ${s(fd, "source")},
-            ${rep}, ${stage}, ${sql.json(how)}, ${s(fd, "text_notes")}, ${callAt}, ${callRep}, ${num(fd, "value")}, ${me})
+            ${rep}, ${stage}, ${sql.json(how)}, ${s(fd, "text_notes")}, ${callAt}, ${callRep}, ${len(fd)}, ${num(fd, "value")}, ${me})
   `;
   const card = await shrinkImage(fd.get("card") as File | null);
   if (card) await sql`insert into lead_files (lead_id, mime, data) values (${id}, ${card.mime}, ${card.data})`;
-  const note = "Lead added" + (card ? " · business card attached" : "") + (callAt ? ` · call booked ${fmtDateTime(callAt)}${callRep ? " with " + callRep : ""}` : "");
+  const note = "Lead added" + (card ? " · business card attached" : "") + (callAt ? ` · call booked ${fmtDateTime(callAt)} (${len(fd)} min)${callRep ? " with " + callRep : ""}` : "");
   await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${note}, ${me})`;
   revalidatePath("/");
   revalidatePath("/calendar");
@@ -80,7 +81,7 @@ export async function updateLead(fd: FormData) {
 
   const prevCall = cur.call_at ? new Date(cur.call_at).getTime() : null;
   if (callAt && callAt.getTime() !== prevCall) {
-    notes.push(`Call booked ${fmtDateTime(callAt)}${callRep ? " with " + callRep : ""}`);
+    notes.push(`Call booked ${fmtDateTime(callAt)} (${len(fd)} min)${callRep ? " with " + callRep : ""}`);
     if (stage === "texting") stage = "booked";
   }
   if (!callAt && prevCall) notes.push("Call removed");
@@ -100,7 +101,7 @@ export async function updateLead(fd: FormData) {
     update leads set
       business = ${s(fd, "business")}, contact = ${s(fd, "contact")}, phone = ${s(fd, "phone")}, email = ${s(fd, "email")},
       trade = ${s(fd, "trade")}, source = ${s(fd, "source")}, rep = ${s(fd, "rep")}, how = ${sql.json(how)},
-      text_notes = ${s(fd, "text_notes")}, call_at = ${callAt}, call_rep = ${callRep}, outcome = ${outcome},
+      text_notes = ${s(fd, "text_notes")}, call_at = ${callAt}, call_rep = ${callRep}, call_len = ${len(fd)}, outcome = ${outcome},
       call_notes = ${s(fd, "call_notes")}, next_step = ${nextStep}, lost_reason = ${s(fd, "lost_reason")},
       stage = ${stage}, value = ${num(fd, "value")}, follow_up_at = ${followUp}, updated_at = now()
     where id = ${id}
@@ -192,4 +193,23 @@ export async function saveAvailability(fd: FormData) {
   for (const r of rows) await sql`insert into availability (rep, dow, start_min, end_min) values (${rep}, ${r.dow}, ${r.s}, ${r.e})`;
   revalidatePath("/availability");
   redirect(`/availability?saved=${encodeURIComponent(rep)}`);
+}
+
+export async function bookCall(fd: FormData) {
+  await ensureSchema();
+  const id = s(fd, "id");
+  const callAt = fromLocalInput(s(fd, "call_at"));
+  const callRep = s(fd, "call_rep");
+  if (!id || !callAt) redirect("/calendar");
+  const me = currentRep();
+  const cur = (await sql`select stage from leads where id = ${id}`)[0];
+  if (!cur) redirect("/calendar");
+  const stage = ["texting", "followup", "calldone", "lost"].includes(cur.stage) ? "booked" : cur.stage;
+  await sql`update leads set call_at = ${callAt}, call_rep = ${callRep}, call_len = ${len(fd)}, outcome = '', stage = ${stage}, updated_at = now() where id = ${id}`;
+  await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${`Call booked ${fmtDateTime(callAt)} (${len(fd)} min)${callRep ? " with " + callRep : ""}`}, ${me})`;
+  revalidatePath("/");
+  revalidatePath("/calendar");
+  revalidatePath(`/lead/${id}`);
+  const day = s(fd, "call_at").slice(0, 10);
+  redirect(`/calendar?date=${day}&open=${id}`);
 }
