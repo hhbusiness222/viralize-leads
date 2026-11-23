@@ -322,3 +322,26 @@ details.pb summary .small{margin-left:auto;font-weight:500}
   .wk-blk.narrow.cal-blk,.wk.dayview .cal-blk.tight{writing-mode:horizontal-tb;display:block}
   .sheet{top:auto;left:0;width:100%;max-height:85vh;border-radius:16px 16px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 }
+
+/* booking picker */
+.bp-sel{display:flex;justify-content:space-between;align-items:center;gap:10px;border:2px dashed var(--line2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.bp-sel.on{border-style:solid;border-left-width:6px;background:#faf8ff}
+.bp-days{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.bp-days::-webkit-scrollbar{display:none}
+.bp-days .daytab{flex:0 0 52px;cursor:pointer;font:inherit}
+.bp-grid{display:grid;border:1px solid var(--line);border-radius:10px;overflow:hidden;max-height:460px;overflow-y:auto;background:var(--white)}
+.bp-corner,.bp-rep{position:sticky;top:0;z-index:2;background:#fafbfd;border-bottom:1px solid var(--line)}
+.bp-rep{display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:700;padding:8px 2px;border-left:1px solid var(--line);min-width:0}
+.bp-rep i{width:8px;height:8px;border-radius:3px;flex:0 0 auto}
+.bp-rep .nm-short{display:none}
+.bp-time{font-size:11px;color:var(--text2);font-weight:600;text-align:right;padding:2px 6px 0 0;border-top:1px solid #edf0f5;height:30px}
+.bp-time.half{border-top-style:dashed;border-top-color:#f3f4f8}
+.bp-cell{height:30px;border:none;border-left:1px solid var(--line);border-top:1px solid #edf0f5;background:#fff;cursor:pointer;padding:0 3px;font:inherit;font-size:10px;font-weight:700;color:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.bp-cell.half{border-top-style:dashed;border-top-color:#f3f4f8}
+.bp-cell:hover:not(:disabled){outline:2px solid var(--blue);outline-offset:-2px}
+.bp-cell.taken{background:#1f2937 !important;cursor:not-allowed}
+.bp-cell.sel{outline:2px solid #111827;outline-offset:-2px}
+.bp-cell span{display:block;overflow:hidden;text-overflow:ellipsis}
+.linkbtn{background:none;border:none;color:var(--blue);font:inherit;font-size:13px;font-weight:600;padding:8px 0;cursor:pointer;text-decoration:underline}
+@media(max-width:899px){.bp-rep .nm-full{display:none}.bp-rep .nm-short{display:inline}.bp-rep{flex-direction:column;gap:2px;font-size:11px}}
+.bp{min-width:0;max-width:100%}.form > *{min-width:0}

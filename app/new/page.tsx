@@ -3,11 +3,13 @@ import { createLead } from "../actions";
 import { getDistinct, getSettings } from "../../lib/data";
 import { currentRep } from "../../lib/auth";
 import { STAGES } from "../../lib/types";
+import BookingPicker from "../../components/BookingPicker";
+import { getBookingData } from "../../lib/booking";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewLead() {
-  const [settings, trades, sources] = await Promise.all([getSettings(), getDistinct("trade"), getDistinct("source")]);
+  const [settings, trades, sources, booking] = await Promise.all([getSettings(), getDistinct("trade"), getDistinct("source"), getBookingData()]);
   const me = currentRep();
   return (
     <Shell active="add" title="Add lead">
@@ -70,16 +72,7 @@ export default async function NewLead() {
         </div>
         <div className="ph">Book the call <span className="small">optional</span></div>
         <div className="pb form">
-          <div className="grid2">
-            <div><label>Date and time</label><input name="call_at" type="datetime-local" /></div>
-            <div>
-              <label>Who&apos;s taking the call</label>
-              <select name="call_rep" defaultValue="">
-                <option value="">Not set</option>
-                {settings.reps.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-          </div>
+          <BookingPicker {...booking} />
           <button className="btn wide" type="submit">Save lead</button>
         </div>
       </form>

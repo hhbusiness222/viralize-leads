@@ -5,12 +5,14 @@ import { Avatar, Pill, money } from "../../../components/LeadCard";
 import { addNote, deleteLead, removeCard, setStage, updateLead } from "../../actions";
 import { getActivity, getLead, getSettings, hasCard } from "../../../lib/data";
 import { OUTCOMES, STAGES } from "../../../lib/types";
+import BookingPicker from "../../../components/BookingPicker";
+import { getBookingData, initialPick } from "../../../lib/booking";
 import { fmtDate, fmtDateTime, toDateInput, toLocalInput } from "../../../lib/time";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadPage({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; del?: string } }) {
-  const [lead, acts, settings, card] = await Promise.all([getLead(params.id), getActivity(params.id), getSettings(), hasCard(params.id)]);
+  const [lead, acts, settings, card, booking] = await Promise.all([getLead(params.id), getActivity(params.id), getSettings(), hasCard(params.id), getBookingData(params.id)]);
   if (!lead) notFound();
   const tel = lead.phone.replace(/[^\d+]/g, "");
   const howOpts = Array.from(new Set([...settings.how, ...lead.how]));
@@ -127,16 +129,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
             </div>
             <div className="ph">Call</div>
             <div className="pb form">
-              <div className="grid2">
-                <div><label>Date and time</label><input name="call_at" type="datetime-local" defaultValue={toLocalInput(lead.call_at)} /></div>
-                <div>
-                  <label>Who&apos;s taking it</label>
-                  <select name="call_rep" defaultValue={lead.call_rep}>
-                    <option value="">Not set</option>
-                    {repOpts(lead.call_rep).map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-              </div>
+              <BookingPicker {...booking} initial={initialPick(lead.call_at, lead.call_rep)} />
               <div className="grid2">
                 <div><label>Follow up on</label><input name="follow_up_at" type="date" defaultValue={toDateInput(lead.follow_up_at)} /></div>
                 <div>
