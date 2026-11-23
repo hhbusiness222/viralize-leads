@@ -174,3 +174,22 @@ export async function removeCard(fd: FormData) {
   await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${"Business card screenshot removed"}, ${currentRep()})`;
   revalidatePath(`/lead/${id}`);
 }
+
+export async function saveAvailability(fd: FormData) {
+  await ensureSchema();
+  const { fromHHMM } = await import("../lib/availability");
+  const rep = s(fd, "rep");
+  if (!rep) redirect("/availability/edit");
+  const rows: { dow: number; s: number; e: number }[] = [];
+  for (let dow = 0; dow < 7; dow++) {
+    for (let i = 0; i < 3; i++) {
+      const st = fromHHMM(s(fd, `d${dow}_${i}_s`));
+      const en = fromHHMM(s(fd, `d${dow}_${i}_e`));
+      if (st != null && en != null && en > st) rows.push({ dow, s: st, e: en });
+    }
+  }
+  await sql`delete from availability where rep = ${rep}`;
+  for (const r of rows) await sql`insert into availability (rep, dow, start_min, end_min) values (${rep}, ${r.dow}, ${r.s}, ${r.e})`;
+  revalidatePath("/availability");
+  redirect(`/availability?saved=${encodeURIComponent(rep)}`);
+}

@@ -76,7 +76,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
   const showFu = searchParams.view === "followups";
 
   return (
-    <Shell active="cal" title="Calendar" reps={settings.reps} actions={<Link href="/new" className="btn sm">+ Book</Link>}>
+    <Shell active="cal" title="Calendar" reps={settings.reps} actions={<><Link href="/availability" className="btn ghost sm">Availability</Link><Link href="/new" className="btn sm">+ Book</Link></>}>
       <div className="cal-tools">
         <div className="seg">
           <Link href={q(searchParams, { view: "" })} className={!showOverdue ? "on" : ""}>Month</Link>

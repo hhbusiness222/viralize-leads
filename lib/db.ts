@@ -90,6 +90,23 @@ export async function ensureSchema() {
           key text primary key,
           value jsonb not null
         )`;
+      await sql`
+        create table if not exists availability (
+          id bigserial primary key,
+          rep text not null,
+          dow int not null,
+          start_min int not null,
+          end_min int not null
+        )`;
+      await sql`create index if not exists availability_rep_idx on availability(rep, dow)`;
+      const seeded = await sql`select 1 from settings where key = 'avail_seeded'`;
+      if (!seeded.length) {
+        const { SAMPLE_AVAILABILITY } = await import("./availability");
+        for (const w of SAMPLE_AVAILABILITY) {
+          await sql`insert into availability (rep, dow, start_min, end_min) values (${w.rep}, ${w.dow}, ${w.s}, ${w.e})`;
+        }
+        await sql`insert into settings (key, value) values ('avail_seeded', 'true'::jsonb) on conflict do nothing`;
+      }
     })().catch((e) => {
       globalThis.__vz_schema_ready = undefined;
       throw e;
