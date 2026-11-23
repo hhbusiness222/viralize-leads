@@ -234,3 +234,35 @@ export async function bookCall(fd: FormData) {
   const day = s(fd, "call_at").slice(0, 10);
   redirect(`/calendar?date=${day}&open=${id}`);
 }
+
+const WORDS = ["puck", "rink", "snow", "plow", "truck", "maple", "storm", "blade", "salt", "wolf", "bear", "eagle", "tiger", "hammer", "brick", "steel"];
+function easyPassword() {
+  const { randomInt } = require("crypto") as typeof import("crypto");
+  return WORDS[randomInt(WORDS.length)] + String(randomInt(1000, 10000));
+}
+
+/** Admin: make passwords for everyone who doesn't have one (or everyone, if all=1). Shown once. */
+export async function generatePasswords(fd: FormData) {
+  await ensureSchema();
+  const me = currentRep();
+  if (!isAdmin(me)) redirect("/settings?err=perm");
+  const { reps } = await getSettings();
+  const existing = (await sql`select name from logins`).map((r: any) => r.name);
+  const only = s(fd, "name");
+  const targets = only ? [only] : reps.filter((r) => !existing.includes(r));
+  const made: Record<string, string> = {};
+  for (const r of targets) {
+    const pw = easyPassword();
+    made[r] = pw;
+    await sql`insert into logins (name, pw, updated_at) values (${r}, ${hashPassword(pw)}, now())
+              on conflict (name) do update set pw = excluded.pw, updated_at = now()`;
+  }
+  cookies().set("vz_flash", Buffer.from(JSON.stringify(made)).toString("base64url"), { httpOnly: true, sameSite: "lax", secure: true, maxAge: 60 * 30, path: "/settings" });
+  revalidatePath("/settings");
+  redirect("/settings?gen=1");
+}
+
+export async function clearFlash() {
+  cookies().set("vz_flash", "", { httpOnly: true, sameSite: "lax", secure: true, maxAge: 0, path: "/settings" });
+  redirect("/settings");
+}

@@ -1,5 +1,7 @@
 import Shell from "../../components/Shell";
-import { logout, saveSettings, setPassword } from "../actions";
+import { clearFlash, generatePasswords, logout, saveSettings, setPassword } from "../actions";
+import { cookies } from "next/headers";
+import CopyButton from "../../components/CopyButton";
 import { getLoginNames, getSettings, isAdmin } from "../../lib/data";
 import { currentRep } from "../../lib/auth";
 import { STAGES } from "../../lib/types";
@@ -10,6 +12,12 @@ export default async function Settings({ searchParams }: { searchParams: { saved
   const [settings, withPw] = await Promise.all([getSettings(), getLoginNames()]);
   const me = currentRep();
   const admin = isAdmin(me);
+  let flash: Record<string, string> = {};
+  try { flash = JSON.parse(Buffer.from(cookies().get("vz_flash")?.value || "", "base64url").toString() || "{}"); } catch { flash = {}; }
+  const flashNames = admin ? Object.keys(flash) : [];
+  const site = "viralize-leads.vercel.app";
+  const textFor = (n: string) => `Your Viralize login\n${site}\nName: ${n}\nPassword: ${flash[n]}`;
+  const missing = settings.reps.filter((r) => !withPw.includes(r));
   const errMsg: Record<string, string> = {
     short: "Password needs at least 6 characters.",
     current: "Your current password was wrong.",
@@ -41,6 +49,32 @@ export default async function Settings({ searchParams }: { searchParams: { saved
           </form>
         </div>
         <div style={{ display: "grid", gap: 16 }}>
+          {flashNames.length > 0 && (
+            <div className="panel" style={{ borderColor: "var(--blue)" }}>
+              <div className="ph">New passwords <span className="small">shown once, copy them now</span></div>
+              <div className="pb" style={{ display: "grid", gap: 10 }}>
+                {flashNames.map((n) => (
+                  <div key={n} className="script-h" style={{ alignItems: "center" }}>
+                    <div><b>{n}</b>: <code style={{ fontSize: 15 }}>{flash[n]}</code></div>
+                    <CopyButton text={textFor(n)} />
+                  </div>
+                ))}
+                <div className="small">Copy puts a ready-to-send text on your clipboard (link, name and password). Paste it to each guy.</div>
+                <form action={clearFlash}><button className="btn ghost sm" type="submit">Done, hide these</button></form>
+              </div>
+            </div>
+          )}
+          {admin && (
+            <form action={generatePasswords} className="panel">
+              <div className="pb" style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                <div>
+                  <b>Make passwords for me</b>
+                  <div className="small">{missing.length ? `${missing.length} guy${missing.length === 1 ? "" : "s"} without a password: ${missing.join(", ")}` : "Everyone has a password."}</div>
+                </div>
+                <button className="btn" type="submit" disabled={!missing.length}>Generate passwords</button>
+              </div>
+            </form>
+          )}
           {admin && (
             <div className="panel">
               <div className="ph">Team logins <span className="small">only you and Jamal see this</span></div>
@@ -54,9 +88,10 @@ export default async function Settings({ searchParams }: { searchParams: { saved
                     </div>
                     <input name="password" type="text" placeholder={withPw.includes(r) ? "New password to reset" : "Set a password"} minLength={6} required autoComplete="off" />
                     <button className="btn sm" type="submit">{withPw.includes(r) ? "Reset" : "Set"}</button>
+                    <button className="btn ghost sm" type="submit" formAction={generatePasswords} formNoValidate>Random</button>
                   </form>
                 ))}
-                <div className="small">Text each guy his password. He can change it himself after.</div>
+                <div className="small">Type one yourself, or hit Random. Each guy can change his own after.</div>
               </div>
             </div>
           )}

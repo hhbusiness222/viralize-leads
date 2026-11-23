@@ -365,3 +365,5 @@ details.pb summary .small{margin-left:auto;font-weight:500}
 .lr-name{display:flex;flex-direction:column;gap:3px}
 .tag.warn{background:var(--amber-l);color:#b35c00}
 @media(max-width:560px){.login-row{grid-template-columns:1fr auto}.lr-name{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px}}
+.login-row{grid-template-columns:150px 1fr auto auto}
+@media(max-width:560px){.login-row{grid-template-columns:1fr auto auto}}
