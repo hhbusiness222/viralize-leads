@@ -44,7 +44,7 @@ export async function setPassword(fd: FormData) {
   const pw = String(fd.get("password") ?? "");
   if (!me) redirect("/login");
   if (who !== me && !isAdmin(me)) redirect("/settings?err=perm");
-  if (pw.length < 8) redirect(`/settings?err=short&who=${encodeURIComponent(who)}`);
+  if (pw.length < 4) redirect(`/settings?err=short&who=${encodeURIComponent(who)}`);
   if (who === me && !isAdmin(me)) {
     const stored = await getLoginHash(me);
     if (stored && !checkPassword(String(fd.get("current") ?? ""), stored)) redirect("/settings?err=current");
