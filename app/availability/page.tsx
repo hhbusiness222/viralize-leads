@@ -2,37 +2,14 @@ import Link from "next/link";
 import Shell, { colorFor } from "../../components/Shell";
 import { getSettings } from "../../lib/data";
 import { currentRep } from "../../lib/auth";
-import { DAYS, dateOfDow, fmtMin, getAvailability, nowInTz, type Window } from "../../lib/availability";
+import { DAYS, dateOfDow, fmtMin, getAvailability, nowInTz } from "../../lib/availability";
 
 export const dynamic = "force-dynamic";
 
 const START = 8 * 60;
 const END = 22 * 60;
-const HOUR_PX = 48;
+const HOUR_PX = 56;
 const top = (m: number) => ((Math.max(m, START) - START) / 60) * HOUR_PX;
-
-/** Side-by-side layout for overlapping blocks, like Google Calendar. */
-function layout(ws: Window[]) {
-  const items = [...ws].sort((a, b) => a.s - b.s || a.e - b.e).map((w) => ({ w, lane: 0, lanes: 1 }));
-  let cluster: typeof items = [];
-  let clusterEnd = -1;
-  const flush = () => {
-    const n = Math.max(1, ...cluster.map((i) => i.lane + 1));
-    cluster.forEach((i) => (i.lanes = n));
-    cluster = [];
-  };
-  for (const it of items) {
-    if (it.w.s >= clusterEnd) { flush(); clusterEnd = -1; }
-    const used = new Set(cluster.filter((c) => c.w.e > it.w.s).map((c) => c.lane));
-    let lane = 0;
-    while (used.has(lane)) lane++;
-    it.lane = lane;
-    cluster.push(it);
-    clusterEnd = Math.max(clusterEnd, it.w.e);
-  }
-  flush();
-  return items;
-}
 
 export default async function Availability({ searchParams }: { searchParams: { d?: string; saved?: string; view?: string; rep?: string } }) {
   const now = nowInTz();
@@ -40,6 +17,7 @@ export default async function Availability({ searchParams }: { searchParams: { d
   const [settings, allWindows] = await Promise.all([getSettings(), getAvailability()]);
   const only = searchParams.rep && settings.reps.includes(searchParams.rep) ? searchParams.rep : "";
   const windows = only ? allWindows.filter((w) => w.rep === only) : allWindows;
+  const laneReps = only ? [only] : settings.reps;
   const dayView = searchParams.view === "day";
   const q = (patch: Record<string, string>) => {
     const p = new URLSearchParams();
@@ -104,6 +82,17 @@ export default async function Availability({ searchParams }: { searchParams: { d
             </Link>
           ))}
         </div>
+        <div className="wk-reps">
+          <div />
+          <div className="wk-reps-row">
+            {laneReps.map((r) => (
+              <div key={r} className="wk-rep" style={{ color: colorFor(r, settings.reps) }}>
+                <i style={{ background: colorFor(r, settings.reps) }} />
+                <span className="nm-full">{r}</span><span className="nm-short">{r.slice(0, 3)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="wk-body" style={{ height: (END - START) / 60 * HOUR_PX }}>
           <div className="wk-gutter">
             {hours.map((h) => <span key={h} style={{ top: top(h * 60) }}>{hourLabel(h)}</span>)}
@@ -112,20 +101,22 @@ export default async function Availability({ searchParams }: { searchParams: { d
             <div key={label} className={"wk-day" + (d === sel ? " sel" : "")}>
               {hours.map((h) => <span key={h} className="wk-line" style={{ top: top(h * 60) }} />)}
               {d === now.dow && now.min > START && now.min < END && <span className="wk-now" style={{ top: top(now.min) }} />}
-              {layout(windows.filter((w) => w.dow === d && w.e > START && w.s < END)).map(({ w, lane, lanes }, i) => {
+              {laneReps.map((r, lane) => <span key={"g" + r} className="wk-lane" style={{ left: `${(lane / laneReps.length) * 100}%`, width: `${100 / laneReps.length}%` }} />)}
+              {windows.filter((w) => w.dow === d && w.e > START && w.s < END && laneReps.includes(w.rep)).map((w, i) => {
+                const lane = laneReps.indexOf(w.rep);
+                const lanes = laneReps.length;
                 const c = colorFor(w.rep, settings.reps);
                 const h = top(Math.min(w.e, END)) - top(w.s);
                 return (
                   <Link
                     key={i}
                     href={`/availability/edit?rep=${encodeURIComponent(w.rep)}`}
-                    className="wk-blk"
-                    style={{ top: top(w.s), height: h - 2, left: `calc(${(lane / lanes) * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)`, background: c + "26", borderLeftColor: c, color: c }}
+                    className={"wk-blk" + (lanes > 2 ? " narrow" : "")}
+                    style={{ top: top(w.s) + 1, height: h - 2, left: `calc(${(lane / lanes) * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)`, background: c }}
                     title={`${w.rep} ${fmtMin(w.s)} to ${fmtMin(w.e)}`}
                   >
-                    <b className="full">{w.rep}</b>
-                    <b className="short">{lanes >= 3 ? w.rep.slice(0, 3) : w.rep}</b>
-                    {h > 34 && <span className={lanes >= 3 ? "full" : ""}>{fmtMin(w.s)}-{fmtMin(w.e)}</span>}
+                    <b>{w.rep}</b>
+                    <span>{fmtMin(w.s)} - {fmtMin(w.e)}</span>
                   </Link>
                 );
               })}
