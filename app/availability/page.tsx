@@ -18,7 +18,7 @@ export default async function Availability({ searchParams }: { searchParams: { d
   const only = searchParams.rep && settings.reps.includes(searchParams.rep) ? searchParams.rep : "";
   const windows = only ? allWindows.filter((w) => w.rep === only) : allWindows;
   const laneReps = only ? [only] : settings.reps;
-  const dayView = searchParams.view === "day";
+  const dayView = true;
   const q = (patch: Record<string, string>) => {
     const p = new URLSearchParams();
     const base: Record<string, string> = { d: String(sel), view: dayView ? "day" : "", rep: only };
@@ -48,10 +48,6 @@ export default async function Availability({ searchParams }: { searchParams: { d
           ))}
           {only && <Link href={q({ rep: "" })} className="lg">Show everyone</Link>}
         </div>
-        <div className="seg wk-desk">
-          <Link href={q({ view: "" })} className={!dayView ? "on" : ""}>Week</Link>
-          <Link href={q({ view: "day" })} className={dayView ? "on" : ""}>Day</Link>
-        </div>
       </div>
 
       <div className="daytabs wk-mobile">
@@ -64,7 +60,7 @@ export default async function Availability({ searchParams }: { searchParams: { d
       </div>
 
       {dayView && (
-        <div className="daytabs wk-desk" style={{ display: "grid" }}>
+        <div className="daytabs wk-desk" style={{ display: "grid", marginTop: 8 }}>
           {DAYS.map((label, i) => (
             <Link key={label} href={q({ d: String(i) })} className={"daytab" + (i === sel ? " on" : "") + (i === now.dow ? " today" : "")}>
               <b>{label}</b>
@@ -124,7 +120,7 @@ export default async function Availability({ searchParams }: { searchParams: { d
           ))}
         </div>
       </div>
-      <div className="small" style={{ marginTop: 8 }}>Repeats every week. Click a day to zoom in, click a name to see just that guy, click a block to change hours.</div>
+      <div className="small" style={{ marginTop: 8 }}>Repeats every week. Tap a name to see just that guy, tap a block to change hours.</div>
     </Shell>
   );
 }
