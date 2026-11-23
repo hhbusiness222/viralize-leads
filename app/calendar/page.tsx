@@ -128,6 +128,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
             </div>
             <Link href={q(searchParams, { date: addDays(date, 7), open: "" })} className="btn ghost sm" aria-label="Next week">›</Link>
           </div>
+          <div className="note" style={{ margin: "10px 0 0", background: "var(--blue-l)", color: "var(--blue)", border: "1px solid #ddd3fa" }}>Tap any shaded time to book a meeting with that guy.</div>
           <div className="row" style={{ justifyContent: "space-between", margin: "8px 0" }}>
             <b>{dateLabel}</b>
             <span className="small">{calls.length} call{calls.length === 1 ? "" : "s"}{date !== today && <> · <Link href={q(searchParams, { date: "", open: "" })} style={{ textDecoration: "underline" }}>Today</Link></>}</span>
@@ -158,14 +159,14 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                   const c = colorFor(w.rep, settings.reps);
                   const pos = { left: `${(lane / lanes.length) * 100}%`, width: `${100 / lanes.length}%` };
                   const slots = [];
-                  for (let m = Math.max(w.s, START); m + 30 <= Math.min(w.e, END); m += 30) slots.push(m);
+                  for (let m = Math.max(w.s, START); m + SLOT <= Math.min(w.e, END); m += SLOT) slots.push(m);
                   return (
                     <span key={"a" + i}>
                       <span className="cal-avail" style={{ ...pos, top: top(w.s), height: top(Math.min(w.e, END)) - top(w.s), background: c + "1f" }} />
                       {slots.map((m, si) => (
                         <Link key={m} href={q(searchParams, { book: `${hhmm(m)}_${w.rep}`, open: "" })} scroll={false} className="cal-slot"
-                          style={{ ...pos, top: top(m), height: top(m + 30) - top(m), ["--c" as any]: c }} title={`Book ${w.rep} at ${fmtMin(m)}`}>
-                          <span><b className="bk-full">+ Book {fmtMin(m)}</b><b className="bk-short">+ {fmtMin(m).replace(/(am|pm)$/, "")}</b></span>
+                          style={{ ...pos, top: top(m), height: top(m + SLOT) - top(m), ["--c" as any]: c }} title={`Book ${w.rep} at ${fmtMin(m)}`}>
+                          <span>+ Book {fmtMin(m)}</span>
                         </Link>
                       ))}
                     </span>
@@ -197,7 +198,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
               </div>
             </div>
           </div>
-          <div className="small" style={{ marginTop: 8 }}>Solid blocks are booked calls, tap one to see the contact. Shaded = that guy is free, tap any shaded time to book a meeting.</div>
+          <div className="small" style={{ marginTop: 8 }}>Solid blocks are booked calls, tap one to see the contact.</div>
         </>
       )}
 
