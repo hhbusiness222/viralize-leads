@@ -19,7 +19,7 @@ export default async function Settings({ searchParams }: { searchParams: { saved
   const textFor = (n: string) => `Your Viralize login\n${site}\nName: ${n}\nPassword: ${flash[n]}`;
   const missing = settings.reps.filter((r) => !withPw.includes(r));
   const errMsg: Record<string, string> = {
-    short: "Password needs at least 6 characters.",
+    short: "Password needs at least 8 characters.",
     current: "Your current password was wrong.",
     perm: "Only Hunter or Jamal can change other people's passwords.",
   };
@@ -43,7 +43,7 @@ export default async function Settings({ searchParams }: { searchParams: { saved
               {!admin && withPw.includes(me) && (
                 <div><label>Current password</label><input name="current" type="password" required autoComplete="current-password" /></div>
               )}
-              <div><label>New password</label><input name="password" type="password" required minLength={6} autoComplete="new-password" /></div>
+              <div><label>New password</label><input name="password" type="password" required minLength={8} autoComplete="new-password" /></div>
               <button className="btn" type="submit">Save password</button>
             </div>
           </form>
@@ -86,7 +86,7 @@ export default async function Settings({ searchParams }: { searchParams: { saved
                       <b>{r}</b>
                       <span className={"tag" + (withPw.includes(r) ? "" : " warn")}>{withPw.includes(r) ? "Has password" : "No password yet"}</span>
                     </div>
-                    <input name="password" type="text" placeholder={withPw.includes(r) ? "New password to reset" : "Set a password"} minLength={6} required autoComplete="off" />
+                    <input name="password" type="text" placeholder={withPw.includes(r) ? "New password to reset" : "Set a password"} minLength={8} required autoComplete="off" />
                     <button className="btn sm" type="submit">{withPw.includes(r) ? "Reset" : "Set"}</button>
                     <button className="btn ghost sm" type="submit" formAction={generatePasswords} formNoValidate>Random</button>
                   </form>
