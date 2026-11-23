@@ -30,6 +30,7 @@ export const sql =
   postgres(url || "postgres://invalid", {
     ssl: url && !url.includes("localhost") ? "require" : undefined,
     max: 5,
+    prepare: false,
     idle_timeout: 20,
     connect_timeout: 10,
   });
