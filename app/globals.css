@@ -360,3 +360,8 @@ details.pb summary .small{margin-left:auto;font-weight:500}
 .cal-blk b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cal-blk span{flex:0 0 auto;display:inline !important;opacity:.9}
 @media(max-width:899px){.cal-blk{padding:2px 4px !important}.cal-blk span{display:none !important}.cal-blk b{white-space:nowrap;display:block;-webkit-line-clamp:unset}}
+.login-row{display:grid;grid-template-columns:150px 1fr auto;gap:8px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+.login-row:first-child{border-top:none;padding-top:0}
+.lr-name{display:flex;flex-direction:column;gap:3px}
+.tag.warn{background:var(--amber-l);color:#b35c00}
+@media(max-width:560px){.login-row{grid-template-columns:1fr auto}.lr-name{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px}}

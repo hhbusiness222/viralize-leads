@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { sql, ensureSchema } from "../lib/db";
-import { AUTH_COOKIE, REP_COOKIE, currentRep, expectedToken } from "../lib/auth";
+import { AUTH_COOKIE, checkPassword, currentRep, hashPassword, setSession } from "../lib/auth";
+import { getLoginHash, getSettings, isAdmin } from "../lib/data";
 import { fmtDate, fmtDateTime, fromDateInput, fromLocalInput } from "../lib/time";
 import { STAGE_MAP } from "../lib/types";
 import { shrinkImage } from "../lib/images";
@@ -18,9 +19,16 @@ export async function login(fd: FormData) {
   const pw = s(fd, "password");
   const rep = s(fd, "rep");
   if (!process.env.TEAM_PASSWORD) redirect("/login?err=nopw");
-  if (pw !== process.env.TEAM_PASSWORD) redirect("/login?err=bad");
-  cookies().set(AUTH_COOKIE, expectedToken(), { httpOnly: true, sameSite: "lax", secure: true, maxAge: year, path: "/" });
-  if (rep) cookies().set(REP_COOKIE, rep, { sameSite: "lax", secure: true, maxAge: year, path: "/" });
+  if (!rep) redirect("/login?err=name");
+  const { reps } = await getSettings();
+  if (!reps.includes(rep)) redirect("/login?err=bad");
+  const stored = await getLoginHash(rep);
+  let ok = false;
+  if (stored) ok = checkPassword(pw, stored);
+  // Bootstrap: an admin with no password yet can get in with the team password and set everyone up.
+  else if (isAdmin(rep)) ok = pw === process.env.TEAM_PASSWORD;
+  if (!ok) redirect(`/login?err=${stored || isAdmin(rep) ? "bad" : "nopass"}&rep=${encodeURIComponent(rep)}`);
+  setSession(rep);
   redirect("/");
 }
 
@@ -29,10 +37,22 @@ export async function logout() {
   redirect("/login");
 }
 
-export async function setRep(fd: FormData) {
-  const rep = s(fd, "rep");
-  cookies().set(REP_COOKIE, rep, { sameSite: "lax", secure: true, maxAge: year, path: "/" });
-  revalidatePath("/", "layout");
+export async function setPassword(fd: FormData) {
+  await ensureSchema();
+  const me = currentRep();
+  const who = s(fd, "name");
+  const pw = String(fd.get("password") ?? "");
+  if (!me) redirect("/login");
+  if (who !== me && !isAdmin(me)) redirect("/settings?err=perm");
+  if (pw.length < 6) redirect(`/settings?err=short&who=${encodeURIComponent(who)}`);
+  if (who === me && !isAdmin(me)) {
+    const stored = await getLoginHash(me);
+    if (stored && !checkPassword(String(fd.get("current") ?? ""), stored)) redirect("/settings?err=current");
+  }
+  await sql`insert into logins (name, pw, updated_at) values (${who}, ${hashPassword(pw)}, now())
+            on conflict (name) do update set pw = excluded.pw, updated_at = now()`;
+  revalidatePath("/settings");
+  redirect(`/settings?pw=${encodeURIComponent(who)}`);
 }
 
 function newId() {
@@ -157,6 +177,7 @@ export async function deleteLead(fd: FormData) {
 
 export async function saveSettings(fd: FormData) {
   await ensureSchema();
+  if (!isAdmin(currentRep())) redirect("/settings?err=perm");
   const lines = (v: string) => v.split("\n").map((x) => x.trim()).filter(Boolean);
   const reps = lines(s(fd, "reps"));
   const how = lines(s(fd, "how"));

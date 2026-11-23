@@ -154,3 +154,18 @@ export async function getBookableLeads(): Promise<Lead[]> {
   const rows = await sql`select * from leads where stage in ('texting','followup','calldone') order by updated_at desc limit 100`;
   return rows.map(rowToLead);
 }
+
+export const ADMINS = ["Hunter", "Jamal"];
+export function isAdmin(name: string) {
+  return ADMINS.includes(name);
+}
+export async function getLoginNames(): Promise<string[]> {
+  await ensureSchema();
+  const rows = await sql`select name from logins`;
+  return rows.map((r: any) => r.name);
+}
+export async function getLoginHash(name: string): Promise<string | null> {
+  await ensureSchema();
+  const rows = await sql`select pw from logins where name = ${name}`;
+  return rows[0]?.pw ?? null;
+}

@@ -101,6 +101,12 @@ export async function ensureSchema() {
           end_min int not null
         )`;
       await sql`create index if not exists availability_rep_idx on availability(rep, dow)`;
+      await sql`
+        create table if not exists logins (
+          name text primary key,
+          pw text not null,
+          updated_at timestamptz not null default now()
+        )`;
       // one-time: move Marcus to the end of a saved rep list (he doesn't take calls)
       const moved = await sql`select 1 from settings where key = 'marcus_last'`;
       if (!moved.length) {
