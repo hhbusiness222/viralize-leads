@@ -101,6 +101,16 @@ export async function ensureSchema() {
           end_min int not null
         )`;
       await sql`create index if not exists availability_rep_idx on availability(rep, dow)`;
+      // one-time: move Marcus to the end of a saved rep list (he doesn't take calls)
+      const moved = await sql`select 1 from settings where key = 'marcus_last'`;
+      if (!moved.length) {
+        const saved = await sql`select value from settings where key = 'reps'`;
+        if (saved[0] && Array.isArray(saved[0].value) && saved[0].value.includes("Marcus")) {
+          const list = (saved[0].value as string[]).filter((r) => r !== "Marcus").concat("Marcus");
+          await sql`update settings set value = ${sql.json(list)} where key = 'reps'`;
+        }
+        await sql`insert into settings (key, value) values ('marcus_last', 'true'::jsonb) on conflict do nothing`;
+      }
       const seeded = await sql`select 1 from settings where key = 'avail_seeded'`;
       if (!seeded.length) {
         const { SAMPLE_AVAILABILITY } = await import("./availability");

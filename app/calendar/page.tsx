@@ -14,7 +14,7 @@ type SP = { date?: string; rep?: string; view?: string; open?: string; book?: st
 
 const START = 8 * 60;
 const END = 22 * 60;
-const HOUR_PX = 88;
+const HOUR_PX = 64;
 const SLOT = 15;
 const top = (m: number) => ((Math.max(m, START) - START) / 60) * HOUR_PX;
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -191,7 +191,7 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                       title={`${l.business} · ${fmtTime(l.call_at)} · ${r}`}
                     >
                       <b>{l.business || l.contact || "Lead"}</b>
-                      <span>{fmtTime(l.call_at)} · {dur}m</span>
+                      <span>{fmtMin(m)}</span>
                     </Link>
                   );
                 })}

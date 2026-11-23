@@ -62,8 +62,14 @@ export function initials(s: string) {
 }
 export const PALETTE = ["#623cd8", "#155eef", "#17b26a", "#f79009", "#e5484d", "#0ea5e9", "#d946ef", "#0d9488", "#a16207", "#64748b"];
 /** Each rep gets a fixed color by their position in the team list; unknown names fall back to a hash. */
+// Each known rep keeps his colour no matter where he sits in the list.
+const FIXED: Record<string, string> = {
+  Hunter: "#623cd8", Jamal: "#155eef", Jaxson: "#17b26a", Cameron: "#f79009",
+  Marcus: "#e5484d", Headsick: "#0ea5e9", Sebastian: "#d946ef",
+};
 export function colorFor(s: string, reps?: string[]) {
   if (!s) return "#c9d0dd";
+  if (FIXED[s]) return FIXED[s];
   if (reps) {
     const i = reps.indexOf(s);
     if (i >= 0) return PALETTE[i % PALETTE.length];

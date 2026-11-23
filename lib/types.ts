@@ -21,7 +21,7 @@ export const OUTCOMES = [
   "Cancelled",
 ];
 
-export const DEFAULT_REPS = ["Hunter", "Jamal", "Jaxson", "Cameron", "Marcus", "Headsick", "Sebastian"];
+export const DEFAULT_REPS = ["Hunter", "Jamal", "Jaxson", "Cameron", "Headsick", "Sebastian", "Marcus"];
 export const DEFAULT_HOW = [
   "Word of mouth",
   "Referrals",
