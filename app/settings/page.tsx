@@ -1,5 +1,5 @@
 import Shell from "../../components/Shell";
-import { clearFlash, generatePasswords, logout, saveSettings, setPassword } from "../actions";
+import { clearFlash, clearTestLeads, generatePasswords, loadTestLeads, logout, saveSettings, setPassword } from "../actions";
 import { cookies } from "next/headers";
 import CopyButton from "../../components/CopyButton";
 import { getLoginNames, getSettings, isAdmin } from "../../lib/data";
@@ -8,7 +8,7 @@ import { STAGES } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function Settings({ searchParams }: { searchParams: { saved?: string; pw?: string; err?: string; who?: string } }) {
+export default async function Settings({ searchParams }: { searchParams: { saved?: string; pw?: string; err?: string; who?: string; test?: string } }) {
   const [settings, withPw] = await Promise.all([getSettings(), getLoginNames()]);
   const me = currentRep();
   const admin = isAdmin(me);
@@ -26,6 +26,8 @@ export default async function Settings({ searchParams }: { searchParams: { saved
   return (
     <Shell active="settings" title="Settings" reps={settings.reps}>
       {searchParams.saved && <div className="note ok" style={{ marginBottom: 12 }}>Saved.</div>}
+      {searchParams.test === "added" && <div className="note ok" style={{ marginBottom: 12 }}>Test leads added. Check the pipeline and calendar.</div>}
+      {searchParams.test === "cleared" && <div className="note ok" style={{ marginBottom: 12 }}>All TEST leads deleted.</div>}
       {searchParams.pw && <div className="note ok" style={{ marginBottom: 12 }}>Password set for {searchParams.pw}.</div>}
       {searchParams.err && errMsg[searchParams.err] && <div className="note err" style={{ marginBottom: 12 }}>{errMsg[searchParams.err]}</div>}
       <div className="detail">
@@ -104,6 +106,16 @@ export default async function Settings({ searchParams }: { searchParams: { saved
                 <button className="btn" type="submit">Save</button>
               </div>
             </form>
+          )}
+          {admin && (
+            <div className="panel">
+              <div className="ph">Test data</div>
+              <div className="pb" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <form action={loadTestLeads}><button className="btn" type="submit">Load test leads</button></form>
+                <form action={clearTestLeads}><button className="btn danger" type="submit">Delete all TEST leads</button></form>
+                <div className="small" style={{ width: "100%" }}>Adds 15 fake businesses across every stage, with calls booked this week. All named TEST so they&apos;re easy to wipe.</div>
+              </div>
+            </div>
           )}
           <div className="panel">
             <div className="ph">Pipeline stages</div>

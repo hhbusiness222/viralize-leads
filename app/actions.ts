@@ -266,3 +266,56 @@ export async function clearFlash() {
   cookies().set("vz_flash", "", { httpOnly: true, sameSite: "lax", secure: true, maxAge: 0, path: "/settings" });
   redirect("/settings");
 }
+
+const TEST_LEADS: { b: string; c: string; t: string; stage: string; rep: string; how: string[]; note: string; call?: [number, number, number]; callRep?: string; len?: number; outcome?: string; next?: string; fu?: number; value?: number }[] = [
+  { b: "TEST Mike's Plumbing", c: "Mike", t: "Plumber", stage: "texting", rep: "Jaxson", how: ["Word of mouth"], note: "Mostly referrals. Said winter is slow. Asked how it works." },
+  { b: "TEST Northside Roofing", c: "Dave", t: "Roofer", stage: "texting", rep: "Cameron", how: ["Referrals", "Google / website"], note: "Has a website but no calls from it. Replied 'yes' to the 5-10 quote requests question." },
+  { b: "TEST Capital Eavestrough", c: "Steve", t: "Eavestrough", stage: "texting", rep: "Headsick", how: ["Posting on socials"], note: "Posts in FB groups himself. Asked what the catch is." },
+  { b: "TEST Rideau HVAC", c: "Ravi", t: "HVAC", stage: "booked", rep: "Jaxson", how: ["Referrals"], note: "Family business, years in the trade. Asked about cost, pushed to call.", call: [0, 18, 0], callRep: "Jamal", len: 15 },
+  { b: "TEST Delta Decks", c: "Dan", t: "Deck builder", stage: "booked", rep: "Sebastian", how: ["Paid ads"], note: "Running his own Meta ads, ~$300/mo, not happy with results.", call: [2, 10, 30], callRep: "Hunter", len: 20 },
+  { b: "TEST Ottawa Fence Co", c: "Omar", t: "Fencing", stage: "booked", rep: "Cameron", how: ["Word of mouth", "Lead vendor (Angi, HomeStars etc)"], note: "Pays HomeStars, says leads are garbage.", call: [2, 15, 0], callRep: "Jaxson", len: 30 },
+  { b: "TEST Benny Snow Removal", c: "Benny", t: "Snow removal", stage: "booked", rep: "Hunter", how: ["Paid ads"], note: "Spent ~$150 on ads in 2 weeks, 4 contracts signed. $649 single / $849 triple.", call: [3, 13, 0], callRep: "Hunter", len: 30 },
+  { b: "TEST Kanata Landscaping", c: "Chris", t: "Landscaping", stage: "booked", rep: "Headsick", how: ["Referrals"], note: "Wants to book spring work early.", call: [0, 19, 0], callRep: "Headsick", len: 20 },
+  { b: "TEST Barrhaven Paving", c: "Tony", t: "Paving", stage: "calldone", rep: "Jaxson", how: ["Google / website"], note: "Good convo over text.", outcome: "Showed, thinking about it", next: "Send him the plan Thursday", value: 2500 },
+  { b: "TEST Glebe Electric", c: "Sarah", t: "Electrician", stage: "calldone", rep: "Sebastian", how: ["Word of mouth"], note: "Busy but wants steadier work.", outcome: "Showed, good fit", next: "Walk her through setup next week", value: 3000 },
+  { b: "TEST Orleans Pressure Wash", c: "Jordan", t: "Pressure washing", stage: "followup", rep: "Cameron", how: ["Posting on socials"], note: "Seasonal, wants to start in spring.", outcome: "Showed, thinking about it", next: "Check back early March", fu: 0, value: 1500 },
+  { b: "TEST Stittsville Concrete", c: "Mark", t: "Concrete", stage: "followup", rep: "Jaxson", how: ["Referrals"], note: "Needs to talk to his partner first.", outcome: "Showed, thinking about it", next: "Follow up after he talks to partner", fu: 3, value: 4000 },
+  { b: "TEST Bytown Painting", c: "Luc", t: "Painter", stage: "won", rep: "Hunter", how: ["Word of mouth"], note: "Signed after first call.", outcome: "Showed, good fit", value: 3500 },
+  { b: "TEST Nepean Windows", c: "Gary", t: "Windows & doors", stage: "lost", rep: "Headsick", how: ["Lead vendor (Angi, HomeStars etc)"], note: "Locked into a HomeStars contract till summer.", outcome: "Showed, not a fit" },
+  { b: "TEST Vanier Handyman", c: "Pete", t: "Handyman", stage: "lost", rep: "Sebastian", how: ["Nothing really"], note: "Stopped replying after the opener." },
+];
+
+/** Admin: add demo leads (all named TEST ...) to show the pipeline. */
+export async function loadTestLeads() {
+  await ensureSchema();
+  const me = currentRep();
+  if (!isAdmin(me)) redirect("/settings?err=perm");
+  const { todayKey } = await import("../lib/time");
+  const base = Date.parse(todayKey() + "T00:00:00Z");
+  const day = (n: number) => new Date(base + n * 86400000).toISOString().slice(0, 10);
+  const hh = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  let i = 0;
+  for (const t of TEST_LEADS) {
+    const id = "test_" + Date.now().toString(36) + "_" + i++;
+    const callAt = t.call ? fromLocalInput(`${day(t.call[0])}T${hh(t.call[1], t.call[2])}`) : null;
+    const fu = t.fu != null ? fromLocalInput(`${day(t.fu)}T09:00`) : null;
+    await sql`
+      insert into leads (id, business, contact, phone, email, trade, source, rep, stage, how, text_notes, call_at, call_rep, call_len, outcome, next_step, follow_up_at, value, created_by)
+      values (${id}, ${t.b}, ${t.c}, ${"613 555 " + String(1000 + i * 37).slice(0, 4)}, ${t.c.toLowerCase() + "@test.com"}, ${t.t}, ${"TEST - Ottawa Contractors FB group"},
+              ${t.rep}, ${t.stage}, ${sql.json(t.how)}, ${t.note}, ${callAt}, ${t.callRep || ""}, ${t.len || 30}, ${t.outcome || ""}, ${t.next || ""}, ${fu}, ${t.value || 0}, ${t.rep})
+    `;
+    await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${"Lead added (test data)"}, ${t.rep})`;
+    if (callAt) await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${`Call booked ${fmtDateTime(callAt)} (${t.len || 30} min) with ${t.callRep}`}, ${t.rep})`;
+  }
+  revalidatePath("/", "layout");
+  redirect("/settings?test=added");
+}
+
+/** Admin: remove every lead whose business name starts with TEST. */
+export async function clearTestLeads() {
+  await ensureSchema();
+  if (!isAdmin(currentRep())) redirect("/settings?err=perm");
+  await sql`delete from leads where business like 'TEST %' or business like 'TEST-%'`;
+  revalidatePath("/", "layout");
+  redirect("/settings?test=cleared");
+}
