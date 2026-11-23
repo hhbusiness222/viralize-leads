@@ -158,14 +158,14 @@ export default async function Calendar({ searchParams }: { searchParams: SP }) {
                   const c = colorFor(w.rep, settings.reps);
                   const pos = { left: `${(lane / lanes.length) * 100}%`, width: `${100 / lanes.length}%` };
                   const slots = [];
-                  for (let m = Math.max(w.s, START); m + SLOT <= Math.min(w.e, END); m += SLOT) slots.push(m);
+                  for (let m = Math.max(w.s, START); m + 30 <= Math.min(w.e, END); m += 30) slots.push(m);
                   return (
                     <span key={"a" + i}>
                       <span className="cal-avail" style={{ ...pos, top: top(w.s), height: top(Math.min(w.e, END)) - top(w.s), background: c + "1f" }} />
                       {slots.map((m, si) => (
-                        <Link key={m} href={q(searchParams, { book: `${hhmm(m)}_${w.rep}`, open: "" })} scroll={false} className={"cal-slot" + (si === 0 ? " first" : "")}
-                          style={{ ...pos, top: top(m), height: top(m + SLOT) - top(m), ["--c" as any]: c }} title={`Book ${w.rep} at ${fmtMin(m)}`}>
-                          <span><b className="bk-full">+ Book meeting</b><b className="bk-short">+ Book</b></span>
+                        <Link key={m} href={q(searchParams, { book: `${hhmm(m)}_${w.rep}`, open: "" })} scroll={false} className="cal-slot"
+                          style={{ ...pos, top: top(m), height: top(m + 30) - top(m), ["--c" as any]: c }} title={`Book ${w.rep} at ${fmtMin(m)}`}>
+                          <span><b className="bk-full">+ Book {fmtMin(m)}</b><b className="bk-short">+ {fmtMin(m).replace(/(am|pm)$/, "")}</b></span>
                         </Link>
                       ))}
                     </span>
