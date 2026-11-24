@@ -367,3 +367,29 @@ details.pb summary .small{margin-left:auto;font-weight:500}
 @media(max-width:560px){.login-row{grid-template-columns:1fr auto}.lr-name{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px}}
 .login-row{grid-template-columns:150px 1fr auto auto}
 @media(max-width:560px){.login-row{grid-template-columns:1fr auto auto}}
+
+.dupe{margin-top:8px;background:var(--amber-l);border:1px solid #fcd9a6;color:#8a4600;border-radius:8px;padding:10px 12px;display:grid;gap:4px;font-size:13px}
+.dupe a{color:#8a4600;text-decoration:underline;font-weight:600}
+.dupe-force{display:flex;align-items:center;gap:8px;margin-top:4px;color:#8a4600;font-weight:600;font-size:13px}
+.dupe-force input{width:auto}
+
+/* today */
+.today-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ph .count{background:var(--blue-l);color:var(--blue);border-radius:999px;padding:1px 9px;font-size:12px}
+.today-row{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-left:5px solid;border-radius:8px;padding:10px 12px;background:var(--white)}
+.tr-main{flex:1;min-width:0}
+.tr-when{font-size:12px;font-weight:700}
+.tr-who{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-act{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+/* stats */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-size:26px;font-weight:700}
+.kpi b em{font-style:normal;font-size:16px;color:var(--muted);font-weight:600}
+.kpi span{font-size:12px;color:var(--muted);font-weight:600}
+.sbar{position:relative;display:flex;align-items:center;gap:8px;min-width:120px}
+.sbar span{height:10px;border-radius:999px;min-width:2px}
+.tbl.stats td{font-size:14px}
+@media(max-width:899px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.panel.tbl-wrap{overflow-x:auto}.tbl.stats th,.tbl.stats td{padding:9px 8px}.sbar{min-width:70px}}
+
+@media(max-width:899px){.tbl.stats .hide-m{display:none}.tbl.stats td:first-child{white-space:nowrap}.tbl.stats th{font-size:10px}}

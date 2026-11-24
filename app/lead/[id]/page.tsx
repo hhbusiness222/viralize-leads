@@ -11,7 +11,7 @@ import { fmtDate, fmtDateTime, toDateInput, toLocalInput } from "../../../lib/ti
 
 export const dynamic = "force-dynamic";
 
-export default async function LeadPage({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; del?: string } }) {
+export default async function LeadPage({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; del?: string; dupe?: string } }) {
   const [lead, acts, settings, card, booking] = await Promise.all([getLead(params.id), getActivity(params.id), getSettings(), hasCard(params.id), getBookingData(params.id)]);
   if (!lead) notFound();
   const tel = lead.phone.replace(/[^\d+]/g, "");
@@ -22,6 +22,7 @@ export default async function LeadPage({ params, searchParams }: { params: { id:
   return (
     <Shell active="none" title={lead.business || "Lead"} actions={<Link href="/" className="btn ghost sm">← Pipeline</Link>}>
       {searchParams.saved && <div className="note ok" style={{ marginBottom: 12 }}>Saved.</div>}
+      {searchParams.dupe && <div className="note warn" style={{ marginBottom: 12 }}>That number is already in the app, so nothing new was added. This is the existing lead{lead.rep ? `, owned by ${lead.rep}` : ""}.</div>}
       {over && <div className="note warn" style={{ marginBottom: 12 }}>This call already happened. Log the outcome below.</div>}
       {lead.follow_up_at && !["won", "lost"].includes(lead.stage) && lead.follow_up_at.getTime() < Date.now() + 12 * 3600000 && (
         <div className="note warn" style={{ marginBottom: 12 }}>Follow-up due {fmtDate(lead.follow_up_at)}. Text him, log it, set the next date or move the stage.</div>

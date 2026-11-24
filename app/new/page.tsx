@@ -4,6 +4,7 @@ import { getDistinct, getSettings } from "../../lib/data";
 import { currentRep } from "../../lib/auth";
 import { STAGES } from "../../lib/types";
 import BookingPicker from "../../components/BookingPicker";
+import PhoneField from "../../components/PhoneField";
 import { getBookingData } from "../../lib/booking";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function NewLead({ searchParams }: { searchParams: { date?:
             <div><label>Contact name</label><input name="contact" placeholder="Mike" /></div>
           </div>
           <div className="grid2">
-            <div><label>Phone *</label><input name="phone" required inputMode="tel" placeholder="613 555 0199" /></div>
+            <PhoneField />
             <div><label>Email</label><input name="email" type="email" placeholder="mike@..." /></div>
           </div>
           <div className="grid2">

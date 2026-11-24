@@ -29,7 +29,7 @@ export async function login(fd: FormData) {
   else if (isAdmin(rep)) ok = pw === process.env.TEAM_PASSWORD;
   if (!ok) redirect(`/login?err=${stored || isAdmin(rep) ? "bad" : "nopass"}&rep=${encodeURIComponent(rep)}`);
   setSession(rep);
-  redirect("/");
+  redirect("/today");
 }
 
 export async function logout() {
@@ -62,6 +62,11 @@ function newId() {
 export async function createLead(fd: FormData) {
   await ensureSchema();
   const me = currentRep();
+  if (s(fd, "force_dupe") !== "1") {
+    const { findByPhone } = await import("../lib/data");
+    const dupes = await findByPhone(s(fd, "phone"));
+    if (dupes.length) redirect(`/lead/${dupes[0].id}?dupe=1`);
+  }
   const id = newId();
   const how = fd.getAll("how").map(String);
   const callAt = fromLocalInput(s(fd, "call_at"));
@@ -267,12 +272,13 @@ export async function clearFlash() {
   redirect("/settings");
 }
 
-const TEST_LEADS: { b: string; c: string; t: string; stage: string; rep: string; how: string[]; note: string; call?: [number, number, number]; callRep?: string; len?: number; outcome?: string; next?: string; fu?: number; value?: number }[] = [
-  { b: "TEST Mike's Plumbing", c: "Mike", t: "Plumber", stage: "texting", rep: "Jaxson", how: ["Word of mouth"], note: "Mostly referrals. Said winter is slow. Asked how it works." },
+const TEST_LEADS: { b: string; c: string; t: string; stage: string; rep: string; how: string[]; note: string; call?: [number, number, number]; callRep?: string; len?: number; outcome?: string; next?: string; fu?: number; value?: number; quiet?: number }[] = [
+  { b: "TEST Mike's Plumbing", c: "Mike", t: "Plumber", stage: "texting", rep: "Jaxson", how: ["Word of mouth"], note: "Mostly referrals. Said winter is slow. Asked how it works.", quiet: 3 },
   { b: "TEST Northside Roofing", c: "Dave", t: "Roofer", stage: "texting", rep: "Cameron", how: ["Referrals", "Google / website"], note: "Has a website but no calls from it. Replied 'yes' to the 5-10 quote requests question." },
-  { b: "TEST Capital Eavestrough", c: "Steve", t: "Eavestrough", stage: "texting", rep: "Headsick", how: ["Posting on socials"], note: "Posts in FB groups himself. Asked what the catch is." },
+  { b: "TEST Capital Eavestrough", c: "Steve", t: "Eavestrough", stage: "texting", rep: "Headsick", how: ["Posting on socials"], note: "Posts in FB groups himself. Asked what the catch is.", quiet: 4 },
   { b: "TEST Rideau HVAC", c: "Ravi", t: "HVAC", stage: "booked", rep: "Jaxson", how: ["Referrals"], note: "Family business, years in the trade. Asked about cost, pushed to call.", call: [0, 18, 0], callRep: "Jamal", len: 15 },
-  { b: "TEST Delta Decks", c: "Dan", t: "Deck builder", stage: "booked", rep: "Sebastian", how: ["Paid ads"], note: "Running his own Meta ads, ~$300/mo, not happy with results.", call: [2, 10, 30], callRep: "Hunter", len: 20 },
+  { b: "TEST Delta Decks", c: "Dan", t: "Deck builder", stage: "booked", rep: "Sebastian", how: ["Paid ads"], note: "Running his own Meta ads, ~$300/mo, not happy with results.", call: [0, 16, 30], callRep: "Hunter", len: 20 },
+  { b: "TEST Gatineau Tile", c: "Marc", t: "Tile", stage: "booked", rep: "Jaxson", how: ["Word of mouth"], note: "Booked off the second text.", call: [-1, 14, 0], callRep: "Jaxson", len: 15 },
   { b: "TEST Ottawa Fence Co", c: "Omar", t: "Fencing", stage: "booked", rep: "Cameron", how: ["Word of mouth", "Lead vendor (Angi, HomeStars etc)"], note: "Pays HomeStars, says leads are garbage.", call: [2, 15, 0], callRep: "Jaxson", len: 30 },
   { b: "TEST Benny Snow Removal", c: "Benny", t: "Snow removal", stage: "booked", rep: "Hunter", how: ["Paid ads"], note: "Spent ~$150 on ads in 2 weeks, 4 contracts signed. $649 single / $849 triple.", call: [3, 13, 0], callRep: "Hunter", len: 30 },
   { b: "TEST Kanata Landscaping", c: "Chris", t: "Landscaping", stage: "booked", rep: "Headsick", how: ["Referrals"], note: "Wants to book spring work early.", call: [0, 19, 0], callRep: "Headsick", len: 20 },
@@ -306,6 +312,7 @@ export async function loadTestLeads() {
     `;
     await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${"Lead added (test data)"}, ${t.rep})`;
     if (callAt) await sql`insert into activity (lead_id, text, by_rep) values (${id}, ${`Call booked ${fmtDateTime(callAt)} (${t.len || 30} min) with ${t.callRep}`}, ${t.rep})`;
+    if (t.quiet) await sql`update leads set updated_at = now() - make_interval(days => ${t.quiet}) where id = ${id}`;
   }
   revalidatePath("/", "layout");
   redirect("/settings?test=added");

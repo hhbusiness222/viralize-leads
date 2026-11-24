@@ -30,7 +30,7 @@ export default async function Opportunities({ searchParams }: { searchParams: SP
       active="opp"
       title="Opportunities"
       reps={settings.reps}
-      actions={<Link href="/new" className="btn sm">+ Add</Link>}
+      actions={<><Link href="/contacts" className="btn ghost sm">Contacts</Link><Link href="/new" className="btn sm">+ Add</Link></>}
     >
       {searchParams.deleted && <div className="note ok" style={{ marginBottom: 10 }}>Lead deleted.</div>}
       {overdue.length > 0 && (

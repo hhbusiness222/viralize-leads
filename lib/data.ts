@@ -169,3 +169,17 @@ export async function getLoginHash(name: string): Promise<string | null> {
   const rows = await sql`select pw from logins where name = ${name}`;
   return rows[0]?.pw ?? null;
 }
+
+/** Leads already using this phone number (matched on the last 10 digits). */
+export async function findByPhone(phone: string, excludeId = ""): Promise<Lead[]> {
+  const { phoneKey } = await import("./phone");
+  const k = phoneKey(phone);
+  if (k.length < 7) return [];
+  await ensureSchema();
+  const rows = await sql`
+    select * from leads
+    where id <> ${excludeId}
+      and right(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = ${k}
+    order by updated_at desc limit 5`;
+  return rows.map(rowToLead);
+}
