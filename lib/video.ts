@@ -6,11 +6,13 @@ export async function getVideo(): Promise<Video | null> {
   await ensureSchema();
   const r = await sql`select value from settings where key = 'training_video'`;
   const v = r[0]?.value;
-  return v && v.url ? { url: String(v.url), title: String(v.title || "What Viralize is and what we sell") } : null;
+  if (v && v.url) return { url: String(v.url), title: String(v.title || "What Viralize is and what we sell") };
+  return { url: "/training.mp4", title: "What Viralize is and what we sell" };
 }
 
 /** Turn a share link into something we can embed. Returns null if we can't embed it. */
 export function embedUrl(url: string): string | null {
+  if (url.startsWith("/")) return url;
   try {
     const u = new URL(url.trim());
     const h = u.hostname.replace(/^www\./, "");

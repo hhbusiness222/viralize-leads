@@ -31,7 +31,7 @@ export default async function Playbook() {
                 <div className="small" style={{ fontWeight: 700, color: "var(--ink)" }}>{video.title}</div>
                 {embed ? (
                   <div className="vid">
-                    {isFile ? <video src={embed} controls playsInline preload="metadata" />
+                    {isFile ? <video src={embed} controls playsInline preload="metadata" poster={embed === "/training.mp4" ? "/training.jpg" : undefined} />
                       : <iframe src={embed} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />}
                   </div>
                 ) : null}
@@ -46,7 +46,7 @@ export default async function Playbook() {
                 <form action={saveVideo} className="form" style={{ marginTop: 8 }}>
                   <div><label>Video link</label><input name="url" defaultValue={video?.url || ""} placeholder="YouTube, Loom, Google Drive or Vimeo link" /></div>
                   <div><label>Title</label><input name="title" defaultValue={video?.title || "What Viralize is and what we sell"} /></div>
-                  <div className="small">Google Drive: set sharing to &quot;Anyone with the link&quot;. YouTube: unlisted is fine. Leave the link blank and save to remove it.</div>
+                  <div className="small">Google Drive: set sharing to &quot;Anyone with the link&quot;. YouTube: unlisted is fine. Leave the link blank and save to go back to the uploaded video.</div>
                   <button className="btn" type="submit">Save video</button>
                 </form>
               </details>
