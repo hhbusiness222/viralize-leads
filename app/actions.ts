@@ -326,3 +326,15 @@ export async function clearTestLeads() {
   revalidatePath("/", "layout");
   redirect("/settings?test=cleared");
 }
+
+/** Admin: set or clear the training video shown on the Playbook. */
+export async function saveVideo(fd: FormData) {
+  await ensureSchema();
+  if (!isAdmin(currentRep())) redirect("/playbook");
+  const url = s(fd, "url");
+  if (!url) await sql`delete from settings where key = 'training_video'`;
+  else await sql`insert into settings (key, value) values ('training_video', ${sql.json({ url, title: s(fd, "title") })})
+                 on conflict (key) do update set value = excluded.value`;
+  revalidatePath("/playbook");
+  redirect("/playbook");
+}
