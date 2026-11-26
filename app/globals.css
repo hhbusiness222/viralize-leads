@@ -393,3 +393,6 @@ details.pb summary .small{margin-left:auto;font-weight:500}
 @media(max-width:899px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.panel.tbl-wrap{overflow-x:auto}.tbl.stats th,.tbl.stats td{padding:9px 8px}.sbar{min-width:70px}}
 
 @media(max-width:899px){.tbl.stats .hide-m{display:none}.tbl.stats td:first-child{white-space:nowrap}.tbl.stats th{font-size:10px}}
+
+mark.area{background:#efe9fd;color:var(--blue);font-weight:700;border-radius:3px;padding:0 1px}
+mark.area.empty{background:#fff4e5;color:#b54708}

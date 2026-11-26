@@ -6,10 +6,10 @@ export type Objection = { they: string; you: string[]; note?: string };
 export const FLOW: Script[] = [
   {
     title: "1. Opener",
-    when: "Send after they comment on the post. Change Arizona to the area you're working.",
+    when: "Send after they comment on the post. Set your area at the top and it fills in.",
     text:
       "Hey man, appreciate you commenting on our post.\n\n" +
-      "We work with contractors helping them get consistent inbound jobs, not random leads. We're looking to help 2-5 more companies in Arizona so we don't stack competitors on top of each other.\n\n" +
+      "We work with contractors helping them get consistent inbound jobs, not random leads. We're looking to help 2-5 more companies in {area} so we don't stack competitors on top of each other.\n\n" +
       "Quick question so I don't waste your time, how are you getting most of your work right now?\n\n" +
       "- Referrals / word of mouth\n- Facebook groups\n- Google\n- ads\n- mix of everything",
   },
